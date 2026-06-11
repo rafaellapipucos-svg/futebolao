@@ -148,3 +148,21 @@ Pos-fix da seed, o step 12 (RUN run_core_tests && pytest tests/api) avancou:
 - NEXT [USER] (maquina local, no repo): `git add backend/app/main.py backend/tests/api/test_http_misc.py CONTINUITY.md`;
   `git commit -m "fix(api): bloqueia path traversal no SPA e torna teste SSE nao-pendurante"`;
   `git push origin master`. Render rebuilda; o gate tests/api deve passar.
+
+## Rodada 6 — fix final do gate API (2026-06-11)
+Build do Render confirmou: SSE (I005) PASSOU; sobrou so test_avatar_404_e_upload.
+- I004 CORRIGIDO DE VERDADE (a hipotese da Rodada 5 estava errada): o
+  Starlette TestClient (httpx) NORMALIZA ".." ANTES de enviar, entao o servidor
+  recebe "/etc/passwd" (sem ".."), a guarda `".." in path` NUNCA dispara e o
+  catch-all SPA responde 200 (HTML shell). Nao da p/ o servidor 404ar isso sem
+  quebrar o SPA fallback de /qualquer/coisa. Fix correto: ajustar o teste p/
+  validar a garantia REAL — o pedido normalizado cai no shell SPA e JAMAIS serve
+  arquivo do disco (assert sem content-type image/* e sem "root:") + checar a
+  validacao do handler (/u/avatars/passwd -> 404). A guarda `".." in path` no
+  main.py FICA como hardening (pega clientes que mandam ".." cru/sem normalizar).
+  [CODE] backend/tests/api/test_http_misc.py, backend/app/main.py
+- LICAO: httpx normaliza dot-segments no path; nao da p/ testar traversal de URL
+  esperando que o ".." chegue cru ao app via TestClient. [TOOL]
+- NEXT [USER]: `git add backend/app/main.py backend/tests/api/test_http_misc.py CONTINUITY.md`;
+  `git commit -m "fix(test): valida traversal de avatar pela garantia real (cliente normaliza ..)"`;
+  `git push origin master`. Esperado: gate tests/api 100% verde -> runtime.

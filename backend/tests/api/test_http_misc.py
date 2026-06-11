@@ -43,7 +43,16 @@ def test_estaticos_servidos(client):
 
 def test_avatar_404_e_upload(client, user):
     assert client.get("/u/avatars/999999.jpg").status_code == 404
-    assert client.get("/u/avatars/../../etc/passwd").status_code in (404, 422)
+    # Nome invalido (nao e' "<digitos>.jpg") e' rejeitado pelo proprio handler.
+    assert client.get("/u/avatars/passwd").status_code == 404
+    # Path traversal: o cliente HTTP normaliza ".." ANTES de enviar, entao o
+    # servidor recebe "/etc/passwd" e cai no shell SPA (HTML). A garantia de
+    # seguranca que importa: NUNCA serve um arquivo do disco (sem content-type
+    # image/* e sem vazar conteudo do sistema). Clientes que mandam ".." cru
+    # (sem normalizar) sao 404 pela guarda do catch-all em main.py.
+    trav = client.get("/u/avatars/../../etc/passwd")
+    assert "image/" not in trav.headers.get("content-type", "")
+    assert "root:" not in trav.text
     resp = client.post(
         "/api/profile/avatar",
         files={"file": ("foto.png", _png(), "image/png")},
