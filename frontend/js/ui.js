@@ -78,6 +78,8 @@ export function toast(message, type = 'ok', ms = 3200) {
 }
 
 export function modal(title, content) {
+  // singleton: nunca empilha — fecha qualquer modal aberto antes de abrir.
+  document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
   const backdrop = h('div', { class: 'modal-backdrop' });
   const close = () => backdrop.remove();
   const card = h('div', { class: 'glass modal', role: 'dialog', 'aria-label': title },

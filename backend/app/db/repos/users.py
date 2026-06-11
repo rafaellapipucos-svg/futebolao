@@ -48,6 +48,11 @@ def set_password(conn: Db, user_id: int, password_hash: str) -> None:
     )
 
 
+def set_bio(conn: Db, user_id: int, bio) -> None:
+    # bio não entra no ranking, então não bumpa users_version.
+    conn.execute("UPDATE users SET bio = ? WHERE id = ?", (bio, user_id))
+
+
 def set_display_name(conn: Db, user_id: int, name: str) -> None:
     conn.execute("UPDATE users SET display_name = ? WHERE id = ?", (name, user_id))
     bump_users_version(conn)

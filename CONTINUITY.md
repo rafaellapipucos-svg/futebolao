@@ -252,3 +252,37 @@ App no ar (Cloud Run). Usuario relatou: (a) so o 1o usuario aparece no ranking;
   não apostou. core 152 / node 20 verdes; node --check 0 falhas; py_compile ok;
   todos ≤300 linhas. [TOOL]
 - NEXT [USER]: `git add -A && git commit -m "fix(ui): siglas IN/SC, contraste do tema claro, espacamento admin, registro de nao-apostou" && git push origin master`.
+
+## Rodada 11 — grande atualização (plano: PLAN_RODADA11.md) (2026-06-11)
+Aprovado: 1 agente em fases (não 8 paralelos); rename só texto; revelar aposta no
+kickoff; perfil público com ranking+pontos. Fundações F0 PRONTAS:
+- F0.1 [CODE] users.bio + SCHEMA_VERSION=3 + migração idempotente cross-dialeto
+  (_migrate/_column_exists, whitelist PRAGMA p/ passar scanner). test_migration.
+- F0.2 [CODE] services/profiles.public_profile (SEM email/google) + GET
+  /api/users/{id} + PATCH /api/profile aceita bio + user_payload.bio. test_profiles.
+- F0.3 [CODE] services/public_bets (revela só pós-kickoff) + GET
+  /api/matches/{id}/bets + GET /api/live/matches. bets_repo.for_match. test_public_bets.
+- F0.4 [CODE] anti-contraste definitivo: TODA cor via token (12 literais
+  tokenizados), modal agora SÓLIDO (var(--surface-solid)) — corrige modal escuro
+  no claro; novos tokens --overlay/--glow-*/--red-*/--gold-border; TRAVA no
+  verify.sh (falha se voltar cor hardcoded fora de tokens.css).
+- F0.5 [CODE] CSRF à prova de falha: logout/clear_session_cookies REEMITE
+  csrf_token (não apaga); api.js re-tenta 1x em 403-CSRF buscando config. api.test.
+- Status testes: core 160, node 21, py_compile ok. (D013..D014 mantidos.)
+- D015 ACTIVE: revelar apostas públicas só a partir do kickoff (bet_open=false).
+- NEXT: fases A..H (flags IN/SC tamanho, bugs/modal-singleton, perfil, ao-vivo,
+  perfis clicáveis, rename+subtítulos, redesign ranking/mata-mata, crítica).
+
+### Rodada 11 — progresso (fases A,B,F-parcial) 2026-06-11
+- A [CODE] .flag-abbr 0.8em fonte normal (era 0.62em mono, ficava menor que os
+  pares). Teste estrutural ui.test (flagContent → span .flag-abbr "IN"). Paridade
+  de pixel a confirmar na tela pós-deploy.
+- B [CODE] modal() é singleton: remove .modal-backdrop aberto antes de abrir
+  (corrige janelas empilhando no admin ao clicar várias vezes).
+- F-parcial [CODE] rename "Futebolão"→"Tabolão" (title, splash, brand, login,
+  token comment); subtítulos novos de Tabela/Mata-mata/Ranking/Apostas.
+  (Falta: opção "Live" dentro de Apostas — vai junto da aba Ao Vivo / fase D.)
+- Verde: core 160, node 23, node --check 0 fail, py_compile ok, trava contraste ✓.
+- FALTAM (próxima leva): C perfil (descrição/histórico/botões sair-perfil),
+  D aba Ao Vivo + sub-bio, E perfis clicáveis, F-live, G redesign ranking/
+  mata-mata + animações, H crítica. Fundações p/ tudo isso já prontas (F0.*).

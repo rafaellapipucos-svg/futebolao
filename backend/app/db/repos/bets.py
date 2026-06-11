@@ -59,6 +59,13 @@ def for_user(conn: Db, user_id: int) -> List[Bet]:
     return [to_entity(r) for r in rows]
 
 
+def for_match(conn: Db, match_id: int) -> List[Bet]:
+    rows = conn.execute(
+        "SELECT * FROM bets WHERE match_id = ? ORDER BY user_id", (match_id,)
+    ).fetchall()
+    return [to_entity(r) for r in rows]
+
+
 def all_bets(conn: Db) -> List[Bet]:
     rows = conn.execute("SELECT * FROM bets ORDER BY match_id, user_id").fetchall()
     return [to_entity(r) for r in rows]

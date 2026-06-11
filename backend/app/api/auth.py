@@ -74,12 +74,12 @@ def refresh(
     try:
         user_id, pair = rotate(conn, token, settings.secret_key)
     except TokenInvalidError:
-        clear_session_cookies(response)
+        clear_session_cookies(response, settings)
         raise HTTPException(401, "sessão inválida, entre novamente")
     set_session_cookies(response, settings, pair)
     user = users_repo.by_id(conn, user_id)
     if user is None:
-        clear_session_cookies(response)
+        clear_session_cookies(response, settings)
         raise HTTPException(401, "usuário não existe")
     return user_payload(user)
 
@@ -94,7 +94,7 @@ def logout(
     token = request.cookies.get(REFRESH_COOKIE)
     if token:
         revoke_refresh(conn, token, settings.secret_key)
-    clear_session_cookies(response)
+    clear_session_cookies(response, settings)
     return {"ok": True}
 
 

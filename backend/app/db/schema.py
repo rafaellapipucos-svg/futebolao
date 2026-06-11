@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .connection import Db
 
-SCHEMA_VERSION = 2  # v2: tabela avatars (fotos no banco — discos efemeros)
+SCHEMA_VERSION = 3  # v3: users.bio (descrição do perfil)
 
 _DIALECT_TOKENS = {
     "sqlite": {
@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT,
   google_sub TEXT UNIQUE,
   avatar_ver INTEGER NOT NULL DEFAULT 0,
+  bio TEXT,
   is_admin INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
@@ -105,8 +106,32 @@ def render_ddl(dialect: str) -> str:
     return ddl
 
 
+# PRAGMA não aceita parâmetro; whitelist literal (sem interpolação) p/ passar
+# o scanner anti-injeção de SQL.
+_TABLE_INFO = {"users": "PRAGMA table_info(users)"}
+
+
+def _column_exists(db: Db, table: str, column: str) -> bool:
+    if db.dialect == "sqlite":
+        rows = db.execute(_TABLE_INFO[table]).fetchall()
+        return any(r["name"] == column for r in rows)
+    rows = db.execute(
+        "SELECT 1 FROM information_schema.columns "
+        "WHERE table_name = ? AND column_name = ?",
+        (table, column),
+    ).fetchall()
+    return len(rows) > 0
+
+
+def _migrate(db: Db) -> None:
+    """Migrações idempotentes p/ DBs já existentes (cross-dialeto)."""
+    if not _column_exists(db, "users", "bio"):
+        db.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+
+
 def init_db(db: Db) -> None:
     db.executescript(render_ddl(db.dialect))
+    _migrate(db)
     db.execute(
         "INSERT INTO meta (key, value) VALUES ('data_version', '0') "
         "ON CONFLICT (key) DO NOTHING"

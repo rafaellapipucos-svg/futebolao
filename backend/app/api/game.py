@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..services.bracket_svc import bracket_payload
 from ..services.leaderboard import leaderboard
 from ..services.matches import list_matches
+from ..services.public_bets import live_matches, match_bets_public
 from ..services.standings_svc import standings
 from .deps import get_current_user, get_db
 from ..db.connection import Db
@@ -52,6 +53,21 @@ def get_leaderboard(
             "is_me": r["user_id"] == user["id"],
         })
     return {"leaderboard": payload}
+
+
+@router.get("/matches/{match_id}/bets")
+def match_bets(
+    match_id: int, conn: Db = Depends(get_db), user=Depends(get_current_user)
+):
+    data = match_bets_public(conn, match_id)
+    if data is None:
+        raise HTTPException(404, "partida inexistente")
+    return data
+
+
+@router.get("/live/matches")
+def live(conn: Db = Depends(get_db), user=Depends(get_current_user)):
+    return {"matches": live_matches(conn)}
 
 
 @router.get("/bracket")

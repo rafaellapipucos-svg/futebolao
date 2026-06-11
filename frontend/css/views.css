@@ -7,7 +7,7 @@
 .auth-logo svg { width: 54px; height: 54px; }
 .auth-logo h1 { font-size: var(--fs-xl); font-weight: 800; }
 .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-  background: rgba(0,0,0,0.3); padding: 5px; border-radius: var(--r-md); }
+  background: var(--surface-2); padding: 5px; border-radius: var(--r-md); }
 .auth-tabs button { padding: 9px; border: none; border-radius: var(--r-sm);
   background: transparent; color: var(--text-2); font-weight: 700; cursor: pointer; }
 .auth-tabs button.active { background: var(--surface-2); color: var(--text-0); }
@@ -16,7 +16,7 @@
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px;
   background: var(--border); }
 .auth-error { background: var(--red-soft); color: var(--red);
-  border: 1px solid rgba(255, 93, 106, 0.3); border-radius: var(--r-md);
+  border: 1px solid var(--red-border); border-radius: var(--r-md);
   padding: 10px 14px; font-size: var(--fs-sm); font-weight: 600; }
 
 /* ---- Dashboard (tabela ao vivo) ---- */
@@ -42,7 +42,7 @@
   background: var(--surface-2); color: var(--text-1); flex: none; }
 .pos-badge.q { background: var(--green-soft); color: var(--green); }
 .pos-badge.t { background: var(--gold-soft); color: var(--gold); }
-tr.row-live td { background: rgba(255, 93, 106, 0.05); }
+tr.row-live td { background: var(--red-faint); }
 tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite; }
 .legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4);
   color: var(--text-2); font-size: var(--fs-xs); }
@@ -72,7 +72,7 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
 .bracket-team.loser { opacity: 0.55; }
 .bracket-team .lbl { color: var(--text-2); font-size: var(--fs-xs);
   border: 1px dashed var(--border-strong); padding: 2px 7px; border-radius: 6px; }
-.bracket-final { border: 1px solid rgba(255, 194, 75, 0.4);
+.bracket-final { border: 1px solid var(--gold-border);
   box-shadow: var(--shadow-glow-gold); }
 .bracket-third { opacity: 0.85; }
 .bracket-list { display: grid; gap: var(--sp-3); align-items: start;
@@ -87,7 +87,7 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
   justify-items: center; gap: 8px; }
 .podium-slot .avatar { box-shadow: var(--shadow-glow-green); }
 .podium-slot.first { order: 2; padding-bottom: var(--sp-6);
-  border-color: rgba(255, 194, 75, 0.45); box-shadow: var(--shadow-glow-gold); }
+  border-color: var(--gold-border); box-shadow: var(--shadow-glow-gold); }
 .podium-slot.second { order: 1; }
 .podium-slot.third { order: 3; }
 .podium-pts { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); }

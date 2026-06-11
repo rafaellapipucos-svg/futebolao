@@ -92,7 +92,7 @@ export function renderLeaderboard(store) {
     h('div', { class: 'page-head' },
       h('div', {},
         h('h1', {}, 'Ranking ', h('span', { class: 'grad-text' }, 'da galera')),
-        h('p', { class: 'sub' }, 'Flutuando em tempo real com os placares parciais.'),
+        h('p', { class: 'sub' }, 'Ranking com placar em tempo real com as parciais.'),
       ),
       h('button', {
         class: 'btn btn-primary',

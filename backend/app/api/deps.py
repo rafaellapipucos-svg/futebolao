@@ -89,6 +89,7 @@ def user_payload(user) -> dict:
         "id": user["id"],
         "email": user["email"],
         "display_name": user["display_name"],
+        "bio": user["bio"],
         "is_admin": bool(user["is_admin"]),
         "avatar_url": avatar_url,
         "google_linked": user["google_sub"] is not None,

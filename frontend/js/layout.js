@@ -18,7 +18,7 @@ function brandLogo() {
   svg.style.color = 'var(--green)';
   return h('a', { class: 'brand', href: '#/dashboard' },
     svg,
-    h('span', { class: 'grad-text' }, 'FUTEBOLÃO'),
+    h('span', { class: 'grad-text' }, 'TABOLÃO'),
     h('span', { class: 'year' }, '26'),
   );
 }

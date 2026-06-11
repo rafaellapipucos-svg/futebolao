@@ -85,7 +85,7 @@ export function renderLogin(store, state) {
     h('div', { class: 'glass auth-card' },
       h('div', { class: 'auth-logo' },
         logo,
-        h('h1', { class: 'grad-text' }, 'FUTEBOLÃO 26'),
+        h('h1', { class: 'grad-text' }, 'TABOLÃO 26'),
         h('p', { class: 'muted small' }, 'O bolão da Copa entre amigos'),
       ),
       h('div', { class: 'auth-tabs' },

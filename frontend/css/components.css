@@ -56,7 +56,7 @@
 }
 .tabbar a svg { width: 21px; height: 21px; }
 .tabbar a.active { color: var(--green); }
-.tabbar a.active svg { filter: drop-shadow(0 0 6px rgba(0, 232, 143, 0.6)); }
+.tabbar a.active svg { filter: drop-shadow(0 0 6px var(--tab-active-glow)); }
 
 /* Página */
 .page { padding-top: var(--sp-5); animation: fadeUp 0.3s var(--ease); }
@@ -91,8 +91,8 @@
 .team-side { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .team-side.right { flex-direction: row-reverse; text-align: right; }
 .team-flag { font-size: 1.7rem; line-height: 1; flex: none; }
-.flag-abbr { font-size: 0.62em; font-weight: 700; letter-spacing: 0.01em;
-  font-family: var(--mono); }
+.flag-abbr { display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.8em; font-weight: 700; letter-spacing: 0.02em; flex: none; }
 .team-name { font-weight: 700; font-size: var(--fs-md); overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; }
 .team-tbd { color: var(--text-2); font-weight: 600; font-size: var(--fs-sm);
@@ -116,12 +116,12 @@
   color: var(--text-0); font-weight: 800; cursor: pointer; font-size: 1rem;
   transition: background 0.15s, transform 0.1s;
 }
-.bet-stepper button:hover { background: rgba(255,255,255,0.16); }
+.bet-stepper button:hover { background: var(--hover); }
 .bet-stepper button:active { transform: scale(0.92); }
 .bet-value {
   width: 44px; height: 38px; text-align: center;
   font-family: var(--mono); font-size: var(--fs-lg); font-weight: 800;
-  background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+  background: var(--input-bg); border: 1px solid var(--border);
   border-radius: var(--r-sm); color: var(--text-0);
 }
 .bet-value:focus { outline: none; border-color: var(--green); }

@@ -45,6 +45,18 @@ async function tryRefresh() {
   return refreshing;
 }
 
+let csrfReissuing = null;
+
+async function reissueCsrf() {
+  // (Re)emite o cookie csrf_token buscando o config público.
+  if (!csrfReissuing) {
+    csrfReissuing = rawRequest('/api/meta/config')
+      .then((r) => r.ok)
+      .finally(() => { csrfReissuing = null; });
+  }
+  return csrfReissuing;
+}
+
 const NO_REFRESH = new Set([
   '/api/auth/refresh', '/api/auth/login', '/api/auth/register', '/api/auth/logout',
 ]);
@@ -54,6 +66,18 @@ export async function request(path, opts = {}) {
   if (resp.status === 401 && !NO_REFRESH.has(path)) {
     const renewed = await tryRefresh();
     if (renewed) resp = await rawRequest(path, opts);
+  }
+  // CSRF ausente/expirado (ex.: após logout): reemite o cookie e tenta 1x.
+  if (resp.status === 403 && MUTATING.has(opts.method || 'GET')) {
+    let isCsrf = false;
+    try {
+      const data = await resp.clone().json();
+      isCsrf = !!(data && typeof data.detail === 'string'
+        && data.detail.includes('CSRF'));
+    } catch (err) {
+      isCsrf = false; // corpo não-JSON: não é o caso de CSRF
+    }
+    if (isCsrf && await reissueCsrf()) resp = await rawRequest(path, opts);
   }
   if (!resp.ok) {
     let detail = `erro ${resp.status}`;

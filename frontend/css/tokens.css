@@ -1,4 +1,4 @@
-/* ============ DESIGN TOKENS — Futebolão Copa 2026 ============
+/* ============ DESIGN TOKENS — Tabolão Copa 2026 ============
    Tema CLARO é o padrão (:root). O modo escuro (a UI original) entra com
    [data-theme="dark"]. O alternador fica na barra de navegação. */
 :root {
@@ -28,6 +28,11 @@
   --nav-h: 60px;
   --tabbar-h: 62px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Glows de marca (decorativos, valem nos dois temas) */
+  --glow-cyan: rgba(37, 194, 255, 0.10);
+  --glow-green: rgba(0, 232, 143, 0.08);
+  --glow-violet: rgba(157, 123, 255, 0.07);
+  --tab-active-glow: rgba(0, 232, 143, 0.6);
 
   /* ---------- Paleta CLARA (padrão) ---------- */
   --bg-0: #e9eef6;
@@ -65,6 +70,10 @@
   --input-bg: #ffffff;
   --topbar-bg: rgba(247, 249, 252, 0.85);
   --tabbar-bg: rgba(255, 255, 255, 0.94);
+  --overlay: rgba(30, 41, 59, 0.40);
+  --red-border: rgba(224, 46, 61, 0.35);
+  --red-faint: rgba(224, 46, 61, 0.07);
+  --gold-border: rgba(192, 132, 22, 0.50);
 }
 
 /* ---------- Paleta ESCURA (UI original) ---------- */
@@ -104,4 +113,8 @@
   --input-bg: rgba(0, 0, 0, 0.3);
   --topbar-bg: rgba(5, 10, 22, 0.75);
   --tabbar-bg: rgba(7, 13, 29, 0.92);
+  --overlay: rgba(2, 5, 12, 0.70);
+  --red-border: rgba(255, 93, 106, 0.30);
+  --red-faint: rgba(255, 93, 106, 0.05);
+  --gold-border: rgba(255, 194, 75, 0.45);
 }

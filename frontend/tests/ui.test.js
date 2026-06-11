@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+// DOM stub mínimo para h()/flagContent (Node real não existe no node:test).
+class Node {}
+class El extends Node {
+  constructor(tag) { super(); this.tag = tag; this.className = ''; this.dataset = {}; this.children = []; this.attrs = {}; }
+  setAttribute(k, v) { this.attrs[k] = v; }
+  appendChild(c) { this.children.push(c); return c; }
+  addEventListener() {}
+}
+class Txt extends Node { constructor(t) { super(); this.text = String(t); } }
+globalThis.Node = Node;
+globalThis.document = {
+  createElement: (t) => new El(t),
+  createTextNode: (t) => new Txt(t),
+  createElementNS: (_ns, t) => new El(t),
+};
+
+const ENG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+const { flagContent } = await import('../js/ui.js');
+
+test('flagContent: ENG vira span .flag-abbr com texto "IN"', () => {
+  const el = flagContent({ flag: ENG, code: 'ENG', name: 'Inglaterra' });
+  assert.equal(el.className, 'flag-abbr');
+  assert.equal(el.children[0].text, 'IN');
+});
+
+test('flagContent: bandeira normal continua emoji (string), sem span', () => {
+  const out = flagContent({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA', name: 'Brasil' });
+  assert.equal(typeof out, 'string');
+});

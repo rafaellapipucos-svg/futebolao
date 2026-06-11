@@ -71,6 +71,13 @@ if [ "$MODE" != "core" ]; then
   else
     ok "sem innerHTML=/eval/document.write"
   fi
+
+  step "Frontend: contraste — nenhuma cor literal fora de tokens.css"
+  if grep -rnoE '#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)' frontend/css/base.css frontend/css/components.css frontend/css/views.css | grep -vE 'var\('; then
+    bad "cor hardcoded fora de tokens.css (quebra o tema claro/escuro)"
+  else
+    ok "todas as cores via token"
+  fi
 fi
 
 step "Limite de 300 linhas por arquivo de código"

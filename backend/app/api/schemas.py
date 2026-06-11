@@ -33,6 +33,11 @@ class DisplayNameIn(BaseModel):
     display_name: str = Field(max_length=80)
 
 
+class ProfileUpdateIn(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=80)
+    bio: Optional[str] = Field(default=None, max_length=280)
+
+
 class ChangePasswordIn(BaseModel):
     current_password: Optional[str] = Field(default=None, max_length=128)
     new_password: str = Field(max_length=128)

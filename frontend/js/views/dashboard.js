@@ -73,7 +73,7 @@ export function renderDashboard(store) {
     h('div', { class: 'page-head' },
       h('div', {},
         h('h1', {}, 'Tabela ', h('span', { class: 'grad-text' }, 'ao vivo')),
-        h('p', { class: 'sub' }, 'Jogos em andamento já contam pontos e saldo — em tempo real.'),
+        h('p', { class: 'sub' }, 'Tabela atualizada em tempo real com os jogos em andamento.'),
       ),
     ),
     content,

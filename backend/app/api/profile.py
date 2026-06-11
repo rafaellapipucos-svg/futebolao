@@ -9,7 +9,7 @@ from ..db.repos import users as users_repo
 from ..services import auth as auth_svc
 from ..services.avatars import MAX_BYTES, AvatarError, save_avatar
 from .deps import get_current_user, get_db, get_settings, rate_limit, require_csrf, user_payload
-from .schemas import ChangePasswordIn, DisplayNameIn
+from .schemas import ChangePasswordIn, ProfileUpdateIn
 from ..db.connection import Db
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -21,16 +21,19 @@ def get_profile(user=Depends(get_current_user)):
 
 
 @router.patch("", dependencies=[Depends(rate_limit("mutate")), Depends(require_csrf)])
-def update_display_name(
-    body: DisplayNameIn,
+def update_profile(
+    body: ProfileUpdateIn,
     conn: Db = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    try:
-        name = auth_svc.normalize_display_name(body.display_name)
-    except auth_svc.ValidationError as exc:
-        raise HTTPException(422, str(exc))
-    users_repo.set_display_name(conn, user["id"], name)
+    if body.display_name is not None:
+        try:
+            name = auth_svc.normalize_display_name(body.display_name)
+        except auth_svc.ValidationError as exc:
+            raise HTTPException(422, str(exc))
+        users_repo.set_display_name(conn, user["id"], name)
+    if body.bio is not None:
+        users_repo.set_bio(conn, user["id"], body.bio.strip() or None)
     return user_payload(users_repo.by_id(conn, user["id"]))
 
 

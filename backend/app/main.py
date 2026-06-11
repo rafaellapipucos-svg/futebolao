@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import admin, auth, bets, game, meta, oauth, profile, sse
+from .api import admin, auth, bets, game, meta, oauth, profile, sse, users
 from .config import load_settings
 from .core.ratelimit import default_limiter
 from .db.connection import connect
@@ -95,7 +95,8 @@ def create_app() -> FastAPI:
         return JSONResponse({"detail": "erro interno"}, status_code=500)
 
     for router in (auth.router, oauth.router, game.router, bets.router,
-                   profile.router, admin.router, sse.router, meta.router):
+                   profile.router, admin.router, sse.router, meta.router,
+                   users.router):
         app.include_router(router)
 
     app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")

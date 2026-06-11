@@ -34,7 +34,9 @@ def ensure_csrf_cookie(response: Response, settings: Settings) -> str:
     return token
 
 
-def clear_session_cookies(response: Response) -> None:
+def clear_session_cookies(response: Response, settings: Settings) -> None:
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path=REFRESH_PATH)
-    response.delete_cookie("csrf_token", path="/")
+    # NÃO apaga o csrf: reemite um novo, pra próxima ação (login) ter token
+    # válido sem precisar recarregar a página.
+    ensure_csrf_cookie(response, settings)

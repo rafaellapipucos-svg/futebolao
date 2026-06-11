@@ -64,7 +64,7 @@ export function renderMyBets(store) {
     h('div', { class: 'page-head' },
       h('div', {},
         h('h1', {}, 'Minhas ', h('span', { class: 'grad-text' }, 'apostas')),
-        h('p', { class: 'sub' }, 'Edite as futuras até o apito; confira os pontos das encerradas.'),
+        h('p', { class: 'sub' }, 'Edite as apostas até o apito, confira o resultado das encerradas e acompanhe as ao vivo em tempo real.'),
       ),
     ),
     summaryEl,

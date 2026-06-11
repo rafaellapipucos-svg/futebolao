@@ -87,7 +87,7 @@ export function renderBracket(store) {
     h('div', { class: 'page-head' },
       h('div', {},
         h('h1', {}, 'Chaveamento ', h('span', { class: 'grad-text' }, 'do título')),
-        h('p', { class: 'sub' }, 'Escolha a fase para ver só aquele chaveamento.'),
+        h('p', { class: 'sub' }, 'Escolha a fase para ver o chaveamento.'),
       ),
     ),
     bar,
