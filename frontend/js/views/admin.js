@@ -1,8 +1,9 @@
 // views/admin.js — placar manual, lock por jogo, sync da API e usuários.
 import { ApiError, api } from '../api.js';
 import { ensureData } from '../data.js';
-import { fmtTime, fmtDayLong } from '../format.js';
-import { emptyState, h, modal, skeletonList, toast } from '../ui.js';
+import { fmtTime, fmtDayLong, teamFlag } from '../format.js';
+import { emptyState, h, skeletonList, toast } from '../ui.js';
+import { usersSection } from './admin_users.js';
 
 async function call(path, json, okMsg, store) {
   try {
@@ -17,7 +18,9 @@ async function call(path, json, okMsg, store) {
 }
 
 function sideName(side) {
-  return side.team ? `${side.team.flag} ${side.team.code}` : side.label;
+  if (!side.team) return side.label;
+  const f = teamFlag(side.team);
+  return f === side.team.code ? side.team.code : `${f} ${side.team.code}`;
 }
 
 function scoreControls(store, m) {
@@ -95,37 +98,6 @@ function adminMatchRow(store, m) {
   );
 }
 
-function usersSection(store, users) {
-  const resetPw = (u) => {
-    const input = h('input', { class: 'input', type: 'text',
-      placeholder: 'nova senha (mín. 8)' });
-    const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Redefinir');
-    const dlg = modal(`Redefinir senha — ${u.display_name}`,
-      h('div', { style: 'display:grid;gap:12px' },
-        h('p', { class: 'muted small' }, u.email), input, btn));
-    btn.addEventListener('click', async () => {
-      try {
-        await api.post(`/api/admin/users/${u.id}/reset-password`,
-          { new_password: input.value });
-        toast('Senha redefinida; sessões do usuário revogadas.');
-        dlg.close();
-      } catch (err) {
-        toast(err instanceof ApiError ? err.message : 'falha', 'err');
-      }
-    });
-  };
-  return h('div', { class: 'glass', style: 'padding:16px;display:grid;gap:8px' },
-    h('h3', {}, `Usuários (${users.length})`),
-    users.map((u) => h('div', { class: 'row spread', style: 'border-bottom:1px solid var(--border);padding:6px 0' },
-      h('span', {}, u.display_name, ' ',
-        h('span', { class: 'muted small' }, u.email),
-        u.is_admin ? h('span', { class: 'chip chip-gold', style: 'margin-left:6px' }, 'admin') : null),
-      h('button', { class: 'btn btn-sm', type: 'button', onClick: () => resetPw(u) },
-        'Redefinir senha'),
-    )),
-  );
-}
-
 let usersCache = null;
 
 export function renderAdmin(store, state) {
@@ -171,6 +143,8 @@ export function renderAdmin(store, state) {
       ),
     ),
     content,
-    Array.isArray(usersCache) ? usersSection(store, usersCache) : null,
+    Array.isArray(usersCache)
+      ? usersSection(store, usersCache, () => { usersCache = null; store.set({}); })
+      : null,
   );
 }

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 from ..db.repos import bets as bets_repo
 from ..db.repos import matches as matches_repo
 from ..db.repos import users as users_repo
-from ..db.schema import get_data_version
+from ..db.schema import get_data_version, get_users_version
 from ..domain.entities import MatchStatus
 from .betting import bet_points
 from ..db.connection import Db
@@ -70,7 +70,8 @@ def _compute(conn: Db, include_live: bool) -> List[Dict]:
 
 def leaderboard(conn: Db, include_live: bool = True) -> List[Dict]:
     version = get_data_version(conn)
-    cache_key = (version, include_live)
+    users_version = get_users_version(conn)
+    cache_key = (version, users_version, include_live)
     with _cache_lock:
         cached = _cache.get(cache_key)
     if cached is not None:

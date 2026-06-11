@@ -14,8 +14,10 @@ from ..domain.entities import MatchStatus
 from ..services.bracket_svc import persist_resolutions
 from ..services.live_bus import bus
 from ..services.results import ResultError, reset_match, set_score
+from ..services.betting import BetValidationError, admin_set_bet
+from ..services.matches import list_matches
 from .deps import get_db, get_settings, rate_limit, require_admin, require_csrf
-from .schemas import AdminResetPasswordIn, AdminScoreIn
+from .schemas import AdminBetIn, AdminResetPasswordIn, AdminScoreIn
 from ..db.connection import Db
 
 router = APIRouter(
@@ -95,6 +97,42 @@ def admin_users(conn: Db = Depends(get_db)):
             for u in users_repo.list_all(conn)
         ]
     }
+
+
+@router.delete("/users/{user_id}", dependencies=[Depends(require_csrf)])
+def admin_delete_user(
+    user_id: int, conn: Db = Depends(get_db), admin=Depends(require_admin)
+):
+    if user_id == admin["id"]:
+        raise HTTPException(400, "voce nao pode excluir a si mesmo")
+    if users_repo.by_id(conn, user_id) is None:
+        raise HTTPException(404, "usuario nao encontrado")
+    users_repo.delete(conn, user_id)
+    version = bump_data_version(conn)  # apostas removidas -> placar/ranking mudam
+    bus.publish(version)
+    return {"ok": True}
+
+
+@router.get("/users/{user_id}/bets")
+def admin_user_bets(user_id: int, conn: Db = Depends(get_db)):
+    if users_repo.by_id(conn, user_id) is None:
+        raise HTTPException(404, "usuario nao encontrado")
+    return {"bets": [m for m in list_matches(conn, user_id) if m["my_bet"]]}
+
+
+@router.put("/users/{user_id}/bets/{match_id}", dependencies=[Depends(require_csrf)])
+def admin_put_bet(
+    user_id: int, match_id: int, body: AdminBetIn, conn: Db = Depends(get_db)
+):
+    if users_repo.by_id(conn, user_id) is None:
+        raise HTTPException(404, "usuario nao encontrado")
+    try:
+        admin_set_bet(conn, user_id, match_id, body.home_goals, body.away_goals)
+    except BetValidationError as exc:
+        raise HTTPException(422, str(exc))
+    version = bump_data_version(conn)  # aposta mudou -> recalcula pontos/ranking
+    bus.publish(version)
+    return {"ok": True}
 
 
 @router.post("/users/{user_id}/reset-password", dependencies=[Depends(require_csrf)])

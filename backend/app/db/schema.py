@@ -112,6 +112,10 @@ def init_db(db: Db) -> None:
         "ON CONFLICT (key) DO NOTHING"
     )
     db.execute(
+        "INSERT INTO meta (key, value) VALUES ('users_version', '0') "
+        "ON CONFLICT (key) DO NOTHING"
+    )
+    db.execute(
         "INSERT INTO meta (key, value) VALUES ('schema_version', ?) "
         "ON CONFLICT (key) DO NOTHING",
         (str(SCHEMA_VERSION),),
@@ -129,3 +133,18 @@ def bump_data_version(db: Db) -> int:
         "WHERE key = 'data_version'"
     )
     return get_data_version(db)
+
+
+def get_users_version(db: Db) -> int:
+    """Versao do ESTADO de usuarios (membership/nome/avatar). Invalida caches
+    que dependem de usuarios (ex.: leaderboard), independente de data_version."""
+    row = db.execute("SELECT value FROM meta WHERE key = 'users_version'").fetchone()
+    return int(row["value"]) if row else 0
+
+
+def bump_users_version(db: Db) -> int:
+    db.execute(
+        "UPDATE meta SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT) "
+        "WHERE key = 'users_version'"
+    )
+    return get_users_version(db)

@@ -18,7 +18,7 @@ function howToPlayContent() {
       h('tbody', {},
         [['Fase de Grupos', 1], ['16 avos de final', 2], ['Oitavas de final', 3],
           ['Quartas de final', 4], ['Semifinais', 5], ['Disputa de 3º lugar', 5],
-          ['Final', 10]].map(([label, mult]) => h('tr', {},
+          ['Grande Final', 10]].map(([label, mult]) => h('tr', {},
           h('td', {}, label), h('td', {}, `×${mult}`),
           h('td', {}, String(1 * mult)), h('td', {}, String(3 * mult)))),
       ),

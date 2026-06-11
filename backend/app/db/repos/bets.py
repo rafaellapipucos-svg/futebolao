@@ -31,8 +31,9 @@ def upsert(
     match_id: int,
     home_goals: int,
     away_goals: int,
+    updated_at: Optional[str] = None,
 ) -> Bet:
-    now = _now()
+    now = updated_at or _now()
     conn.execute(
         "INSERT INTO bets (user_id, match_id, home_goals, away_goals, created_at, updated_at) "
         "VALUES (?, ?, ?, ?, ?, ?) "

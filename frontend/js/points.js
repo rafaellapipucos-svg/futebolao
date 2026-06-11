@@ -12,7 +12,7 @@ export const STAGE_LABELS = {
   QF: 'Quartas de final',
   SF: 'Semifinais',
   THIRD: 'Disputa de 3º lugar',
-  FINAL: 'Final',
+  FINAL: 'Grande Final',
 };
 
 export const POINTS_RESULT = 1;

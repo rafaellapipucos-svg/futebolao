@@ -49,7 +49,7 @@ a { color: var(--cyan); text-decoration: none; }
   transition: transform 0.15s var(--ease), background 0.2s, border-color 0.2s, opacity 0.2s;
   user-select: none;
 }
-.btn:hover { background: rgba(255, 255, 255, 0.13); transform: translateY(-1px); }
+.btn:hover { background: var(--hover); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .btn-primary {
@@ -60,6 +60,11 @@ a { color: var(--cyan); text-decoration: none; }
 .btn-danger { border-color: var(--red); color: var(--red); background: var(--red-soft); }
 .btn-sm { padding: 6px 12px; font-size: var(--fs-xs); border-radius: var(--r-sm); }
 .btn-block { width: 100%; }
+.iconbtn { display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: var(--r-full); flex: none;
+  border: 1px solid var(--border-strong); background: var(--surface-2);
+  color: var(--text-1); cursor: pointer; transition: background 0.2s; }
+.iconbtn:hover { background: var(--hover); color: var(--text-0); }
 
 /* Inputs */
 .field { display: grid; gap: 6px; }
@@ -67,7 +72,7 @@ a { color: var(--cyan); text-decoration: none; }
   text-transform: uppercase; letter-spacing: 0.06em; }
 .input {
   width: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 11px 14px;

@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 
 from app.db.repos import matches as matches_repo
+from app.db.repos import bets as bets_repo
 from app.db.repos import users as users_repo
 from app.services.betting import place_bet
 from app.services.leaderboard import leaderboard
@@ -88,6 +89,47 @@ class TestLeaderboard(unittest.TestCase):
         rows = leaderboard(self.conn)
         alice = next(r for r in rows if r["display_name"] == "Alice")
         self.assertEqual(alice["total"], 6)  # cravada (3) × R32 (2)
+
+    def test_cache_invalida_quando_usuarios_mudam(self):
+        # Regressao do bug de producao: novo usuario / troca de avatar NAO
+        # bumpava data_version, entao o ranking ficava preso no cache antigo
+        # (so o 1o usuario, foto velha). Agora users_version invalida o cache.
+        matches_repo.set_score(self.conn, 1, 2, 1, "finished")
+        self.assertNotIn("Eva", {r["display_name"] for r in leaderboard(self.conn)})
+        eva_id = users_repo.create(self.conn, "eva@b.c", "Eva")
+        # aparece SEM bump_data_version manual:
+        self.assertIn("Eva", {r["display_name"] for r in leaderboard(self.conn)})
+        eva = next(r for r in leaderboard(self.conn) if r["display_name"] == "Eva")
+        self.assertEqual(eva["avatar_ver"], 0)
+        # troca de avatar reflete no ranking SEM bump_data_version:
+        users_repo.bump_avatar(self.conn, eva_id)
+        eva2 = next(r for r in leaderboard(self.conn) if r["display_name"] == "Eva")
+        self.assertEqual(eva2["avatar_ver"], 1)
+
+    def test_admin_exclui_perfil_some_do_ranking(self):
+        matches_repo.set_score(self.conn, 1, 2, 1, "finished")
+        self.assertIn("Bob", {r["display_name"] for r in leaderboard(self.conn)})
+        users_repo.delete(self.conn, self.bob)
+        from app.db.schema import bump_data_version
+        bump_data_version(self.conn)
+        self.assertNotIn("Bob", {r["display_name"] for r in leaderboard(self.conn)})
+        # apostas do usuario excluido somem junto (cascade explicito):
+        self.assertEqual(bets_repo.for_user(self.conn, self.bob), [])
+
+    def test_admin_edita_aposta_passada_e_recalcula(self):
+        # Jogo 1 ja comecou/encerrou (placar 2x1). Caro tinha apostado 0x0 (0 pts).
+        # Admin corrige para 2x1: deve virar cravada (3 pts) MESMO sendo edicao
+        # pos-kickoff — admin_set_bet grava updated_at antes do kickoff.
+        from app.services.betting import admin_set_bet
+        from app.db.schema import bump_data_version
+        matches_repo.set_score(self.conn, 1, 2, 1, "finished")
+        antes = next(r for r in leaderboard(self.conn) if r["display_name"] == "Caro")
+        self.assertEqual(antes["total"], 0)
+        admin_set_bet(self.conn, self.caro, 1, 2, 1)
+        bump_data_version(self.conn)
+        depois = next(r for r in leaderboard(self.conn) if r["display_name"] == "Caro")
+        self.assertEqual(depois["total"], 3)  # cravada em fase de grupos
+        self.assertEqual(depois["exact_hits"], 1)
 
 
 if __name__ == "__main__":

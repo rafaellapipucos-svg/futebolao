@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from ..connection import Db, insert_id
+from ..schema import bump_users_version
 
 
 def _now() -> str:
@@ -19,12 +20,14 @@ def create(
     google_sub: Optional[str] = None,
     is_admin: bool = False,
 ) -> int:
-    return insert_id(
+    user_id = insert_id(
         conn,
         "INSERT INTO users (email, display_name, password_hash, google_sub, is_admin, created_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (email, display_name, password_hash, google_sub, int(is_admin), _now()),
     )
+    bump_users_version(conn)  # novo usuario aparece no ranking na hora
+    return user_id
 
 
 def by_id(conn: Db, user_id: int) -> Optional[Any]:
@@ -47,6 +50,7 @@ def set_password(conn: Db, user_id: int, password_hash: str) -> None:
 
 def set_display_name(conn: Db, user_id: int, name: str) -> None:
     conn.execute("UPDATE users SET display_name = ? WHERE id = ?", (name, user_id))
+    bump_users_version(conn)
 
 
 def set_google_sub(conn: Db, user_id: int, sub: str) -> None:
@@ -61,6 +65,7 @@ def bump_avatar(conn: Db, user_id: int) -> int:
     conn.execute(
         "UPDATE users SET avatar_ver = avatar_ver + 1 WHERE id = ?", (user_id,)
     )
+    bump_users_version(conn)  # ranking reflete a nova foto na hora
     row = conn.execute(
         "SELECT avatar_ver FROM users WHERE id = ?", (user_id,)
     ).fetchone()
@@ -72,3 +77,13 @@ def list_all(conn: Db) -> list:
         "SELECT id, email, display_name, avatar_ver, is_admin, created_at "
         "FROM users ORDER BY LOWER(display_name)"
     ).fetchall()
+
+
+def delete(conn: Db, user_id: int) -> None:
+    """Remove o usuario e tudo que e' dele (apostas, sessoes, avatar).
+    Explicito nos dois dialetos (nao depende de ON DELETE CASCADE)."""
+    conn.execute("DELETE FROM bets WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM refresh_tokens WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM avatars WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    bump_users_version(conn)

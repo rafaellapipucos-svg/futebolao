@@ -166,3 +166,68 @@ Build do Render confirmou: SSE (I005) PASSOU; sobrou so test_avatar_404_e_upload
 - NEXT [USER]: `git add backend/app/main.py backend/tests/api/test_http_misc.py CONTINUITY.md`;
   `git commit -m "fix(test): valida traversal de avatar pela garantia real (cliente normaliza ..)"`;
   `git push origin master`. Esperado: gate tests/api 100% verde -> runtime.
+
+## Rodada 7 — alvo real = Google Cloud Run (2026-06-11)
+- CORRECAO DE FATO (supersede Fly/Railway): o deploy NAO e' Render/Fly — e'
+  Google Cloud Run via Cloud Build (GitHub trigger). Projeto futebolao-499113,
+  regiao southamerica-east1. Build verde: e12489eb / commit 43fc059. [USER/TOOL]
+- Mensagem "Nao ha codigo-fonte para edicao" no console NAO e' erro: e' deploy
+  continuo a partir do git (esperado). [TOOL]
+- IMPLICACOES Cloud Run (stateless, FS efemero, HTTPS, PORT injetado):
+  * SECRET_KEY e PEPPER (>=32 chars) sao OBRIGATORIOS — sem eles config.py
+    levanta RuntimeError e a revisao NAO sobe (boot crash). [CODE config.py]
+  * SQLite NAO serve (FS efemero/nao compartilhado): dados somem a cada cold
+    start. Precisa DATABASE_URL (Supabase Postgres, D013). 
+  * COOKIE_SECURE=true (Cloud Run e' HTTPS); PUBLIC_BASE_URL = URL .run.app.
+  * PORT e' injetado pelo Cloud Run; CMD ja usa ${PORT} -> ok.
+- NEXT [USER]: setar env/secrets na revisao do Cloud Run (Editar e implantar
+  nova revisao -> Variaveis e secrets): SECRET_KEY, PEPPER, ADMIN_EMAILS,
+  DATABASE_URL (Supabase), PUBLIC_BASE_URL, COOKIE_SECURE=true. Opcional:
+  INVITE_CODE, GOOGLE_*, FOOTBALL_DATA_TOKEN.
+
+## Rodada 8 — bug do ranking (cache stale) (2026-06-11)
+App no ar (Cloud Run). Usuario relatou: (a) so o 1o usuario aparece no ranking;
+(b) foto do ranking nao atualiza ao trocar no perfil.
+- I006 RESOLVIDO: AMBOS tem a MESMA causa. services/leaderboard.py cacheia o
+  ranking com chave = (data_version, include_live). data_version so muda em
+  RESULTADO de jogo (results.py/admin). Registrar usuario, renomear ou trocar
+  avatar NAO bumpava nada -> cache preso no estado antigo (so o 1o usuario; foto
+  velha / avatar_ver 0 -> iniciais). Fix: nova users_version no meta, bumpada em
+  users_repo.create/set_display_name/bump_avatar; chave do cache passa a
+  (data_version, users_version, include_live). Multi-instancia-safe (contador no
+  DB, igual data_version). [CODE] schema.py, db/repos/users.py, services/leaderboard.py
+- Teste de regressao test_cache_invalida_quando_usuarios_mudam: provado que
+  FALHA sem o fix ('Eva' nao aparece) e passa com ele. Suite core 149 verdes. [CODE]
+- NEXT [USER]: `git add backend/app/db/schema.py backend/app/db/repos/users.py backend/app/services/leaderboard.py backend/tests/core/test_leaderboard.py CONTINUITY.md`;
+  `git commit -m "fix(ranking): invalida cache do leaderboard quando usuarios/avatares mudam"`;
+  `git push origin master`. Deploy automatico (Cloud Run). Apos subir, o ranking
+  ja mostra todos e a foto atualiza na hora.
+
+## Rodada 9 — features pedidas pelo usuário (2026-06-11)
+- Bandeiras ENG/SCO (🏴+tags viram quadrado preto): novo format.teamFlag()
+  mostra a sigla quando a bandeira começa com U+1F3F4. Aplicado em
+  bracket/matches/dashboard/admin. [CODE]
+- Mata-mata: bracket.js agora mostra UMA fase por vez via seletor (chips
+  R32/R16/QF/SF/3º/Grande Final) — menos poluição. "Decisões"/"Final"
+  renomeados para "Grande Final" no app todo + entities.STAGE_LABELS_PT. [CODE]
+- Admin: pode EXCLUIR qualquer perfil (menos o próprio; cascade explícito de
+  bets/tokens/avatars) e EDITAR apostas passadas com recálculo. Endpoints:
+  DELETE /api/admin/users/{id}, GET .../bets, PUT .../bets/{match}. UI nova em
+  views/admin_users.js (api.del adicionado). [USER pediu 2 dos 4 poderes]
+  - D014 ACTIVE: admin_set_bet grava updated_at = kickoff-60s em jogos já
+    iniciados, p/ a edição pontuar (bet_points zera updated_at>=kickoff). Bumpa
+    data_version+SSE. [CODE betting.py]
+- Tema CLARO é o padrão; ESCURO (UI original) via [data-theme="dark"]. tokens.css
+  reestruturado (paleta clara default + dark variant); botão sol/lua na navbar
+  (theme.js, lembra no localStorage; init inline no index.html sem flash);
+  tokenizado .btn:hover e input bg (--hover/--input-bg). [USER escolheu toggle]
+- I007 (relógio-bomba, CRÍTICO): place_bet gravava updated_at = horário da
+  ESCRITA, não o da aposta. Quando o relógio passou do 1º kickoff (Copa começou
+  19:00Z hoje), 5 testes core zeravam e o GATE do build ficaria VERMELHO p/
+  qualquer deploy. Fix: place_bet grava updated_at = `current` (o now informado).
+  Determinístico + mais correto. 151 core verdes. [CODE betting.py]
+- I008 NOTA: scripts/verify.sh falha no sandbox por /tmp/*.log de processo
+  anterior sem permissão de escrita (redirect falha antes de rodar). Não é bug
+  do código: rodar com logs em $(mktemp -d) → core 151, node 20, node --check 0
+  falhas, py_compile limpo, todos ≤300 linhas. [TOOL]
+- NEXT [USER]: `git add -A && git commit -m "feat: bandeiras, mata-mata por fase, admin (excluir/editar apostas), tema claro + fix relogio-bomba" && git push origin master`.

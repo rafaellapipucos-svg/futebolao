@@ -75,6 +75,10 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
 .bracket-final { border: 1px solid rgba(255, 194, 75, 0.4);
   box-shadow: var(--shadow-glow-gold); }
 .bracket-third { opacity: 0.85; }
+.bracket-list { display: grid; gap: var(--sp-3); align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.count-badge { margin-left: 6px; font-size: 0.65rem; padding: 0 6px;
+  background: var(--surface-2); border-radius: var(--r-full); color: var(--text-2); }
 
 /* ---- Ranking ---- */
 .podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3);

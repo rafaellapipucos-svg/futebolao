@@ -24,6 +24,11 @@ class BetIn(BaseModel):
     away_goals: int = Field(ge=0, le=20)
 
 
+class AdminBetIn(BaseModel):
+    home_goals: int = Field(ge=0, le=20)
+    away_goals: int = Field(ge=0, le=20)
+
+
 class DisplayNameIn(BaseModel):
     display_name: str = Field(max_length=80)
 

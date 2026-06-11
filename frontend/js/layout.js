@@ -2,6 +2,7 @@
 import { api } from './api.js';
 import { navigate } from './router.js';
 import { avatarEl, h, icon, toast } from './ui.js';
+import { getTheme, toggleTheme } from './theme.js';
 
 const NAV_ITEMS = [
   { route: 'dashboard', label: 'Tabela', icon: 'table' },
@@ -62,8 +63,17 @@ export function renderShell(store, state, contentEl) {
     }, icon(item.icon, 21), item.label)),
   );
 
+  const themeBtn = h('button', {
+    class: 'iconbtn', type: 'button',
+    title: 'Alternar tema claro/escuro', 'aria-label': 'alternar tema',
+    onClick: () => {
+      const t = toggleTheme();
+      themeBtn.replaceChildren(icon(t === 'dark' ? 'sun' : 'moon', 18));
+    },
+  }, icon(getTheme() === 'dark' ? 'sun' : 'moon', 18));
+
   return h('div', { class: 'shell' },
-    h('header', { class: 'topbar' }, brandLogo(), topnav, userchip),
+    h('header', { class: 'topbar' }, brandLogo(), topnav, themeBtn, userchip),
     h('main', {}, contentEl),
     tabbar,
   );

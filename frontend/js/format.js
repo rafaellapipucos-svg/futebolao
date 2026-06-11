@@ -60,3 +60,12 @@ export function minuteLabel(status, minute) {
 export function statusLabel(status) {
   return { scheduled: 'Agendado', live: 'Ao vivo', finished: 'Encerrado' }[status] || status;
 }
+
+// Bandeiras de sub-divisões (Inglaterra/Escócia: 🏴 + tags) viram um quadrado
+// preto na maioria dos sistemas. Nesses casos mostramos a sigla do time.
+export function teamFlag(team) {
+  if (!team) return '';
+  const f = team.flag || '';
+  if (f.codePointAt(0) === 0x1F3F4) return team.code;
+  return f || team.code;
+}

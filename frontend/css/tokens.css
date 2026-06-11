@@ -1,35 +1,7 @@
-/* ============ DESIGN TOKENS — Futebolão Copa 2026 ============ */
+/* ============ DESIGN TOKENS — Futebolão Copa 2026 ============
+   Tema CLARO é o padrão (:root). O modo escuro (a UI original) entra com
+   [data-theme="dark"]. O alternador fica na barra de navegação. */
 :root {
-  /* Paleta base (dark futurista) */
-  --bg-0: #04070f;
-  --bg-1: #070d1d;
-  --bg-2: #0a1428;
-  --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.08);
-  --surface-solid: #0d1830;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.18);
-
-  /* Acentos */
-  --green: #00e88f;
-  --green-soft: rgba(0, 232, 143, 0.14);
-  --cyan: #25c2ff;
-  --cyan-soft: rgba(37, 194, 255, 0.13);
-  --gold: #ffc24b;
-  --gold-soft: rgba(255, 194, 75, 0.14);
-  --red: #ff5d6a;
-  --red-soft: rgba(255, 93, 106, 0.13);
-  --violet: #9d7bff;
-
-  --grad-brand: linear-gradient(92deg, var(--green), var(--cyan));
-  --grad-gold: linear-gradient(92deg, #ffd98a, var(--gold));
-
-  /* Texto */
-  --text-0: #f2f7ff;
-  --text-1: #b9c6dd;
-  --text-2: #7e8ca6;
-  --text-on-accent: #04240f;
-
   /* Tipografia (system stack, sem CDN) */
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
@@ -45,11 +17,6 @@
   --r-md: 14px;
   --r-lg: 20px;
   --r-full: 999px;
-
-  --shadow-1: 0 4px 24px rgba(0, 0, 0, 0.45);
-  --shadow-glow-green: 0 0 24px rgba(0, 232, 143, 0.18);
-  --shadow-glow-gold: 0 0 32px rgba(255, 194, 75, 0.22);
-
   --blur: 14px;
 
   /* Espaços */
@@ -60,6 +27,77 @@
   --max-w: 1180px;
   --nav-h: 60px;
   --tabbar-h: 62px;
-
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---------- Paleta CLARA (padrão) ---------- */
+  --bg-0: #e9eef6;
+  --bg-1: #f3f6fb;
+  --bg-2: #ffffff;
+  --surface: rgba(17, 25, 45, 0.035);
+  --surface-2: rgba(17, 25, 45, 0.07);
+  --surface-solid: #ffffff;
+  --border: rgba(17, 25, 45, 0.12);
+  --border-strong: rgba(17, 25, 45, 0.2);
+
+  --green: #00a865;
+  --green-soft: rgba(0, 168, 101, 0.14);
+  --cyan: #0b86c9;
+  --cyan-soft: rgba(11, 134, 201, 0.13);
+  --gold: #c08416;
+  --gold-soft: rgba(192, 132, 22, 0.15);
+  --red: #e02e3d;
+  --red-soft: rgba(224, 46, 61, 0.12);
+  --violet: #6f4fe0;
+
+  --grad-brand: linear-gradient(92deg, #00a865, #0b86c9);
+  --grad-gold: linear-gradient(92deg, #e0a83a, #c08416);
+
+  --text-0: #0e1626;
+  --text-1: #43526d;
+  --text-2: #6c7b94;
+  --text-on-accent: #ffffff;
+
+  --shadow-1: 0 6px 24px rgba(17, 25, 45, 0.10);
+  --shadow-glow-green: 0 0 20px rgba(0, 168, 101, 0.16);
+  --shadow-glow-gold: 0 0 28px rgba(192, 132, 22, 0.18);
+
+  --hover: rgba(17, 25, 45, 0.06);
+  --input-bg: #ffffff;
+}
+
+/* ---------- Paleta ESCURA (UI original) ---------- */
+:root[data-theme="dark"] {
+  --bg-0: #04070f;
+  --bg-1: #070d1d;
+  --bg-2: #0a1428;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --surface-solid: #0d1830;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --green: #00e88f;
+  --green-soft: rgba(0, 232, 143, 0.14);
+  --cyan: #25c2ff;
+  --cyan-soft: rgba(37, 194, 255, 0.13);
+  --gold: #ffc24b;
+  --gold-soft: rgba(255, 194, 75, 0.14);
+  --red: #ff5d6a;
+  --red-soft: rgba(255, 93, 106, 0.13);
+  --violet: #9d7bff;
+
+  --grad-brand: linear-gradient(92deg, #00e88f, #25c2ff);
+  --grad-gold: linear-gradient(92deg, #ffd98a, #ffc24b);
+
+  --text-0: #f2f7ff;
+  --text-1: #b9c6dd;
+  --text-2: #7e8ca6;
+  --text-on-accent: #04240f;
+
+  --shadow-1: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow-green: 0 0 24px rgba(0, 232, 143, 0.18);
+  --shadow-glow-gold: 0 0 32px rgba(255, 194, 75, 0.22);
+
+  --hover: rgba(255, 255, 255, 0.13);
+  --input-bg: rgba(0, 0, 0, 0.3);
 }

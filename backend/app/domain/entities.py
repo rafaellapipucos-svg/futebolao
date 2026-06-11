@@ -35,7 +35,7 @@ STAGE_LABELS_PT = {
     Stage.QF: "Quartas de final",
     Stage.SF: "Semifinais",
     Stage.THIRD: "Disputa de 3º lugar",
-    Stage.FINAL: "Final",
+    Stage.FINAL: "Grande Final",
 }
 
 
