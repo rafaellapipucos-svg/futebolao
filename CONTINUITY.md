@@ -122,3 +122,29 @@
   backend/tests/api/conftest.py, backend/tests/api/test_http_misc.py,
   backend/pytest.ini, backend/requirements-dev.txt; push; re-disparar o
   build.
+
+## Rodada 5 — fix gate de testes API no Render (2026-06-11)
+Pos-fix da seed, o step 12 (RUN run_core_tests && pytest tests/api) avancou:
+148 core OK, mas 2 testes de API derrubavam o build.
+- I004 RESOLVIDO: test_avatar_404_e_upload falhava (200 em
+  /u/avatars/../../etc/passwd). Causa: catch-all `@app.get("/{path:path}")`
+  (spa_fallback) servia index.html (200) para QUALQUER caminho, inclusive o
+  traversal (httpx nao normaliza `..`, manda o path cru). Fix: spa_fallback
+  retorna 404 quando `".." in path` (traversal nunca e' rota de SPA). Nao
+  afeta /qualquer/coisa nem estaticos. [CODE] backend/app/main.py
+- I005 RESOLVIDO: test_sse_responde_event_stream pendurava o build (o "step 12
+  travado por horas"). SSE e' generator infinito; tanto TestClient.stream
+  quanto httpx.ASGITransport penduram no fechamento (ASGITransport bufferiza/
+  nao cancela o app). Fix: teste dirige o app ASGI direto, com receive() que
+  devolve http.disconnect apos o 1o chunk -> encerra por 2 vias
+  (listen_for_disconnect + request.is_disconnected), dentro de anyio.fail_after(5).
+  Removido import httpx (nao usado). Validado por simulacao asyncio do
+  StreamingResponse: termina ~5ms, status 200, 1o chunk "retry:", finally roda.
+  [CODE] backend/tests/api/test_http_misc.py
+- pytest.ini (timeout=60) do usuario fica: e' o backstop que impede o build de
+  pendurar para sempre se algo regredir. [TOOL]
+- Sandbox sem PyPI (proxy 403) impede rodar pytest/httpx aqui; verificacao por
+  py_compile + simulacao asyncio do fluxo. Gate real roda no build do Render. [TOOL]
+- NEXT [USER] (maquina local, no repo): `git add backend/app/main.py backend/tests/api/test_http_misc.py CONTINUITY.md`;
+  `git commit -m "fix(api): bloqueia path traversal no SPA e torna teste SSE nao-pendurante"`;
+  `git push origin master`. Render rebuilda; o gate tests/api deve passar.

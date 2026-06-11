@@ -1,7 +1,6 @@
 import io
 
 import anyio
-import httpx
 import pytest
 from PIL import Image
 
@@ -98,21 +97,52 @@ def test_perfil_nome_e_senha(client, user):
 
 @pytest.mark.anyio
 async def test_sse_responde_event_stream(app):
-    """O endpoint SSE e' um generator infinito (ping a cada 25s). Com o
-    TestClient sincrono (transporte via thread/portal), o close() do
-    `with` nao garante que request.is_disconnected() vire True a tempo,
-    e o teste pode ficar pendurado para sempre. Usando ASGITransport na
-    mesma event loop do teste, sair do `async with` cancela a task da
-    geracao de fato; o anyio.fail_after e' um teto extra de seguranca."""
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as ac:
-        async with ac.stream("GET", "/api/live/sse") as resp:
-            assert resp.status_code == 200
-            assert resp.headers["content-type"].startswith("text/event-stream")
-            with anyio.fail_after(5):
-                first = await anext(resp.aiter_lines())
-            assert first.startswith("retry:")
+    """O endpoint SSE e' um generator infinito (ping a cada 25s). Em vez de um
+    cliente HTTP (cujo fechamento de um stream infinito pendura o build),
+    dirigimos o app ASGI diretamente: o receive() devolve http.disconnect logo
+    apos o 1o chunk, encerrando o stream de forma deterministica por DUAS vias
+    independentes (o listen_for_disconnect do StreamingResponse e o proprio
+    request.is_disconnected() do handler). O anyio.fail_after e' o teto final."""
+    import asyncio
 
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.3"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/api/live/sse",
+        "raw_path": b"/api/live/sse",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"testserver")],
+        "client": ("testclient", 50000),
+        "server": ("testserver", 80),
+    }
+    sent: list[dict] = []
+    first_body = asyncio.Event()
+
+    async def receive():
+        # Conexao "viva" ate o 1o chunk sair; depois sinaliza desconexao.
+        await first_body.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        sent.append(message)
+        if message["type"] == "http.response.body" and message.get("body"):
+            first_body.set()
+
+    with anyio.fail_after(5):
+        await app(scope, receive, send)
+
+    start = next(m for m in sent if m["type"] == "http.response.start")
+    assert start["status"] == 200
+    headers = {k.decode().lower(): v.decode() for k, v in start["headers"]}
+    assert headers["content-type"].startswith("text/event-stream")
+    body = b"".join(
+        m.get("body", b"") for m in sent if m["type"] == "http.response.body"
+    ).decode()
+    assert body.startswith("retry:")
 
 def test_oauth_start_sem_config_503(client):
     resp = client.get("/api/oauth/google/start", follow_redirects=False)

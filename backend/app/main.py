@@ -5,7 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -108,6 +108,10 @@ def create_app() -> FastAPI:
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa_fallback(path: str):
+        # Caminho com ".." nunca e' rota de SPA: bloqueia path traversal
+        # (ex.: /u/avatars/../../etc/passwd) em vez de servir o shell com 200.
+        if ".." in path:
+            raise HTTPException(404)
         # SPA usa rotas por hash; qualquer caminho desconhecido volta ao shell
         return FileResponse(FRONTEND_DIR / "index.html")
 
