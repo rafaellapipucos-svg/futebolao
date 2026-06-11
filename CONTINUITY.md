@@ -79,17 +79,21 @@
 ## Rodada 3 — Postgres/Supabase (2026-06-11)
 - D013 ACTIVE: Postgres via DATABASE_URL (Supabase) usando psycopg3 SEM ORM;
   adapter dual-dialeto em db/connection.py; SQLite permanece p/ dev/testes;
-  avatares em BYTEA (D013b). Suite tests/pg contra Postgres real via
-  docker-compose.test.yml (make test-pg). [USER pediu pg; driver escolhido por
-  preservar repos testados]
-- I000 NOTA: sandbox sem PyPI/apt → execucao da suite pg delegada a maquina do
-  usuario/CI (1 comando). Caminho pg validado aqui por driver fake + DDL asserts.
-- 2026-06-11 [CODE] 148 testes core verdes pos-migracao; verify.sh TUDO VERDE.
-- 2026-06-11 [TOOL] Repo GitHub criado pelo usuario: rafaellapipucos-svg/tabolao
-  (vazio, publico). Commit inicial preparado em /tmp/repo (146 arquivos), origin
-  configurado sem token, exportado outputs/tabolao-repo.zip (414K). Ver I002.
-- NEXT [USER]: 1) extrair tabolao-repo.zip local e rodar `git push -u origin main`
-  (auth: usuario=rafaellapipucos-svg, senha=PAT); 2) apagar pasta
-  `.git-broken-pode-apagar`; 3) criar projeto Supabase; rodar `make test-pg` local
-  (ou TEST_DATABASE_URL); 4) Render: Web Service Docker com
-  DATABASE_URL/SECRET_KEY/PEPPER/ADMIN_EMAILS/PUBLIC_BASE_URL/COOKIE_SECURE.
+
+## Rodada 4 — fix deploy Render (2026-06-11)
+- I003 RESOLVIDO: build Docker no Render falhou (FAILED errors=43) com
+  FileNotFoundError em annex_c.txt no estagio `test`. Causa: regra `data/` no
+  .gitignore (sem ancora) casava backend/app/seed/data/, logo annex_c.txt +
+  fixtures.txt + teams.json NUNCA entraram no repo (git ls-files vazio; unico
+  commit 71e1bee nao os contem). So aparece no Render porque os arquivos
+  existem no disco local mas faltam no repo clonado. Fix: .gitignore passa a
+  usar `/data/` (ancorado na raiz) + comentario; `*.db` cobre bolao.db em
+  qualquer lugar. check-ignore confirma seed liberada e runtime ainda ignorado.
+  Sem .dockerignore, basta commitar p/ entrar no build context. [TOOL] 2026-06-11
+- CORRECAO DE FATOS (supersede Rodada 3): branch real = `master` (nao `main`);
+  remote = github.com/rafaellapipucos-svg/futebolao.git (nao `tabolao`). [TOOL]
+- I001 reincidiu: Edit truncou .gitignore em "Ancora"; reescrito via heredoc. [TOOL]
+- NEXT [USER] (maquina local, no repo, 1x): apagar .git/index.lock se existir;
+  `git add .gitignore backend/app/seed/data`;
+  `git commit -m "fix: versiona seed (gitignore ancorado em /data/)"`;
+  `git push origin master`. Render re-builda e o gate de testes acha os arquivos.
