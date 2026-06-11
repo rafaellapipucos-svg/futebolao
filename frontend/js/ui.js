@@ -1,5 +1,6 @@
 // ui.js — h() para DOM seguro (textContent, nunca innerHTML com dados),
 // ícones SVG inline, toast, modal, avatar, skeleton.
+import { flagIsAbbr, teamFlag } from './format.js';
 
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);
@@ -58,6 +59,13 @@ export function icon(name, size = 20) {
   path.setAttribute('d', ICON_PATHS[name] || ICON_PATHS.ball);
   svg.appendChild(path);
   return svg;
+}
+
+// flagContent — emoji (texto) ou sigla pequena (.flag-abbr) p/ ENG/SCO.
+export function flagContent(team) {
+  return flagIsAbbr(team)
+    ? h('span', { class: 'flag-abbr' }, teamFlag(team))
+    : teamFlag(team);
 }
 
 export function toast(message, type = 'ok', ms = 3200) {

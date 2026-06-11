@@ -36,7 +36,7 @@
   --surface: rgba(17, 25, 45, 0.035);
   --surface-2: rgba(17, 25, 45, 0.07);
   --surface-solid: #ffffff;
-  --border: rgba(17, 25, 45, 0.12);
+  --border: rgba(17, 25, 45, 0.14);
   --border-strong: rgba(17, 25, 45, 0.2);
 
   --green: #00a865;
@@ -53,8 +53,8 @@
   --grad-gold: linear-gradient(92deg, #e0a83a, #c08416);
 
   --text-0: #0e1626;
-  --text-1: #43526d;
-  --text-2: #6c7b94;
+  --text-1: #313f56;
+  --text-2: #51607a;
   --text-on-accent: #ffffff;
 
   --shadow-1: 0 6px 24px rgba(17, 25, 45, 0.10);
@@ -63,6 +63,8 @@
 
   --hover: rgba(17, 25, 45, 0.06);
   --input-bg: #ffffff;
+  --topbar-bg: rgba(247, 249, 252, 0.85);
+  --tabbar-bg: rgba(255, 255, 255, 0.94);
 }
 
 /* ---------- Paleta ESCURA (UI original) ---------- */
@@ -100,4 +102,6 @@
 
   --hover: rgba(255, 255, 255, 0.13);
   --input-bg: rgba(0, 0, 0, 0.3);
+  --topbar-bg: rgba(5, 10, 22, 0.75);
+  --tabbar-bg: rgba(7, 13, 29, 0.92);
 }

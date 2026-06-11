@@ -1,8 +1,8 @@
 // views/matches.js — Aba 2: jogos por fase/dia/horário com apostas inline.
 import { renderBetBox } from '../betbox.js';
 import { ensureData } from '../data.js';
-import { fmtTime, groupByDay, minuteLabel, teamFlag } from '../format.js';
-import { emptyState, h, skeletonList } from '../ui.js';
+import { fmtTime, groupByDay, minuteLabel } from '../format.js';
+import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
 const STAGE_FILTERS = [
   ['ALL', 'Todos'], ['GROUP', 'Grupos'], ['R32', '16 avos'], ['R16', 'Oitavas'],
@@ -23,7 +23,7 @@ function ensureTicker(store) {
 function teamSide(side, right = false) {
   if (side.team) {
     return h('div', { class: `team-side${right ? ' right' : ''}` },
-      h('span', { class: 'team-flag' }, teamFlag(side.team)),
+      h('span', { class: 'team-flag' }, flagContent(side.team)),
       h('span', { class: 'team-name' }, side.team.name),
     );
   }

@@ -131,6 +131,17 @@ class TestLeaderboard(unittest.TestCase):
         self.assertEqual(depois["total"], 3)  # cravada em fase de grupos
         self.assertEqual(depois["exact_hits"], 1)
 
+    def test_admin_cria_aposta_para_quem_nao_apostou(self):
+        from app.services.betting import admin_set_bet
+        from app.db.schema import bump_data_version
+        matches_repo.set_score(self.conn, 1, 2, 1, "finished")
+        ze = users_repo.create(self.conn, "ze@b.c", "Ze")
+        self.assertIsNone(bets_repo.get(self.conn, ze, 1))
+        admin_set_bet(self.conn, ze, 1, 2, 1)  # cravada (3 pts)
+        bump_data_version(self.conn)
+        row = next(r for r in leaderboard(self.conn) if r["display_name"] == "Ze")
+        self.assertEqual(row["total"], 3)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -52,11 +52,13 @@ function deleteDialog(store, u, reload) {
 }
 
 function betEditor(store, u, m) {
+  const bet = m.my_bet || { home_goals: 0, away_goals: 0 };
   const home = h('input', { class: 'input', type: 'number', min: '0', max: '20',
-    value: String(m.my_bet.home_goals), style: 'width:54px' });
+    value: String(bet.home_goals), style: 'width:54px' });
   const away = h('input', { class: 'input', type: 'number', min: '0', max: '20',
-    value: String(m.my_bet.away_goals), style: 'width:54px' });
+    value: String(bet.away_goals), style: 'width:54px' });
   const real = m.home_score != null ? `placar ${m.home_score}×${m.away_score}` : 'sem placar';
+  const status = m.my_bet ? real : `não apostou · ${real}`;
   const save = h('button', { class: 'btn btn-sm btn-primary', type: 'button' }, 'Salvar');
   save.addEventListener('click', async () => {
     try {
@@ -72,7 +74,7 @@ function betEditor(store, u, m) {
   });
   return h('div', { class: 'row spread', style: 'gap:8px;border-bottom:1px solid var(--border);padding:8px 0;flex-wrap:wrap' },
     h('div', {}, h('b', {}, `${teamShort(m.home)} × ${teamShort(m.away)}`), ' ',
-      h('span', { class: 'muted small' }, `${m.stage_label} · ${real}`)),
+      h('span', { class: 'muted small' }, `${m.stage_label} · ${status}`)),
     h('div', { class: 'row', style: 'gap:6px' },
       home, h('span', { class: 'score-x' }, 'x'), away, save),
   );
@@ -94,7 +96,7 @@ async function editBetsDialog(store, u) {
 }
 
 export function usersSection(store, users, reload) {
-  return h('div', { class: 'glass', style: 'padding:16px;display:grid;gap:8px' },
+  return h('div', { class: 'glass', style: 'padding:16px;display:grid;gap:8px;margin-top:var(--sp-5)' },
     h('h3', {}, `Usuários (${users.length})`),
     users.map((u) => h('div', { class: 'row spread', style: 'border-bottom:1px solid var(--border);padding:6px 0;gap:8px;flex-wrap:wrap' },
       h('span', {}, u.display_name, ' ',

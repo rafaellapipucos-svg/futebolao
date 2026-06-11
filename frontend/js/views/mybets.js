@@ -38,7 +38,10 @@ export function renderMyBets(store) {
     const withBets = data.matches.filter((m) => m.my_bet);
     summaryEl = summary(withBets);
     const future = data.matches.filter((m) => m.bet_open);
-    const closed = withBets.filter((m) => !m.bet_open)
+    // Encerradas incluem jogos que o usuário NÃO apostou (ficam registrados
+    // como "não apostou"), não só os apostados.
+    const closed = data.matches
+      .filter((m) => !m.bet_open && m.status !== 'scheduled')
       .sort((a, b) => b.kickoff_utc.localeCompare(a.kickoff_utc));
     const list = activeTab === 'future' ? future : closed;
     if (list.length === 0) {

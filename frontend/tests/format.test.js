@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { countdown, dayKey, groupByDay, minuteLabel, statusLabel, teamFlag } from '../js/format.js';
+import { countdown, dayKey, groupByDay, minuteLabel, statusLabel, teamFlag, flagIsAbbr } from '../js/format.js';
 
 test('countdown formata dias/horas/minutos/segundos', () => {
   const base = Date.parse('2026-06-11T12:00:00Z');
@@ -41,11 +41,14 @@ test('minuteLabel e statusLabel', () => {
   assert.equal(statusLabel('finished'), 'Encerrado');
 });
 
-test('teamFlag: sigla p/ bandeira de sub-divisão (quadrado preto), emoji p/ resto', () => {
+test('teamFlag: sigla curta p/ bandeira de sub-divisão (quadrado preto), emoji p/ resto', () => {
   const eng = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
-  assert.equal(teamFlag({ flag: eng, code: 'ENG', name: 'Inglaterra' }), 'ENG');
+  const sco = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+  assert.equal(teamFlag({ flag: eng, code: 'ENG', name: 'Inglaterra' }), 'IN');
+  assert.equal(teamFlag({ flag: sco, code: 'SCO', name: 'Escócia' }), 'SC');
   assert.equal(teamFlag({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA', name: 'Brasil' }), '\u{1F1E7}\u{1F1F7}');
-  assert.equal(teamFlag({ flag: '', code: 'XYZ', name: 'X' }), 'XYZ');
+  assert.equal(teamFlag({ flag: '', code: 'XYZ', name: 'X' }), 'XY');
   assert.equal(teamFlag(null), '');
+  assert.equal(flagIsAbbr({ flag: eng, code: 'ENG' }), true);
+  assert.equal(flagIsAbbr({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA' }), false);
 });
-

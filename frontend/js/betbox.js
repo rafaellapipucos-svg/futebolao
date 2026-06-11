@@ -87,7 +87,8 @@ function lockedView(match) {
     }
   } else {
     parts.push(h('span', { class: 'bet-locked' },
-      icon('lock', 14), match.bet_lock_reason || 'apostas encerradas'));
+      icon('lock', 14), 'Você não apostou'));
+    parts.push(h('span', { class: 'chip' }, '0 pts'));
   }
   return h('div', { class: 'bet-area' }, parts);
 }

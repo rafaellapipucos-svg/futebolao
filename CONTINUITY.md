@@ -231,3 +231,24 @@ App no ar (Cloud Run). Usuario relatou: (a) so o 1o usuario aparece no ranking;
   do código: rodar com logs em $(mktemp -d) → core 151, node 20, node --check 0
   falhas, py_compile limpo, todos ≤300 linhas. [TOOL]
 - NEXT [USER]: `git add -A && git commit -m "feat: bandeiras, mata-mata por fase, admin (excluir/editar apostas), tema claro + fix relogio-bomba" && git push origin master`.
+
+## Rodada 10 — ajustes pós-feedback (2026-06-11)
+- Flags ENG/SCO gigantes: .team-flag é 1.7rem e texto não tem padding como
+  emoji. Fix: teamFlag agora dá sigla de 2 letras (ENG→IN, SCO→SC) e
+  ui.flagContent envolve em .flag-abbr (0.62em mono) p/ ficar do tamanho das
+  outras. flagIsAbbr exportado. Views usam flagContent; admin usa teamFlag str.
+- Contraste do claro ruim: .topbar/.tabbar tinham fundo DARK hardcoded
+  (rgba(5,10,22)/rgba(7,13,29)). Tokenizado --topbar-bg/--tabbar-bg (claro=
+  branco translúcido). Textos do claro escurecidos (text-1 #313f56, text-2
+  #51607a) e borda um tico mais forte. [CODE tokens.css, components.css]
+- Admin: último jogo colidia com Usuários — margin-top var(--sp-5) na seção.
+- "Não apostou" registrado e visível:
+  * mybets aba Encerradas agora lista TODOS os jogos já iniciados (não só os
+    apostados); betbox.lockedView sem aposta mostra "Você não apostou · 0 pts".
+  * GET /api/admin/users/{id}/bets retorna todos os jogos com 2 times definidos
+    (ou já apostados) → admin vê "não apostou" e pode criar/editar a aposta
+    (admin_set_bet faz upsert; pontua via D014). [USER pediu]
+- Testes: teamFlag (IN/SC) atualizado; novo core test admin cria aposta p/ quem
+  não apostou. core 152 / node 20 verdes; node --check 0 falhas; py_compile ok;
+  todos ≤300 linhas. [TOOL]
+- NEXT [USER]: `git add -A && git commit -m "fix(ui): siglas IN/SC, contraste do tema claro, espacamento admin, registro de nao-apostou" && git push origin master`.

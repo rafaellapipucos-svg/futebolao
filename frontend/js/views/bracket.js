@@ -1,8 +1,8 @@
 // views/bracket.js — Aba 3: mata-mata, UMA fase por vez (seletor) para não
 // poluir a tela. Confrontos aparecem assim que ficam garantidos.
 import { ensureData } from '../data.js';
-import { fmtTime, teamFlag } from '../format.js';
-import { emptyState, h, skeletonList } from '../ui.js';
+import { fmtTime } from '../format.js';
+import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
 const PHASES = [
   ['R32', '16 avos'], ['R16', 'Oitavas'], ['QF', 'Quartas'],
@@ -21,7 +21,7 @@ function sideRow(side, score, isWinner, isLoser) {
   }
   return h('div', { class: cls },
     h('span', { class: 't' },
-      h('span', { class: 'team-flag', style: 'font-size:1.05rem' }, teamFlag(side.team)),
+      h('span', { class: 'team-flag', style: 'font-size:1.05rem' }, flagContent(side.team)),
       h('span', { class: 'nm' }, side.team.name),
       isWinner ? '✓' : ''),
     h('span', { class: 'sc' }, score == null ? '' : String(score)),

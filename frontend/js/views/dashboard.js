@@ -1,7 +1,6 @@
 // views/dashboard.js — Aba 1: tabela de classificação ao vivo dos 12 grupos.
 import { ensureData } from '../data.js';
-import { teamFlag } from '../format.js';
-import { emptyState, h, skeletonList } from '../ui.js';
+import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
 function clinchBadge(row) {
   if (row.clinched_first) {
@@ -22,7 +21,7 @@ function standingRow(row) {
     h('span', {
       class: `pos-badge ${row.position <= 2 ? 'q' : row.position === 3 ? 't' : ''}`,
     }, String(row.position)),
-    h('span', { class: 'team-flag', style: 'font-size:1.1rem' }, teamFlag(row.team)),
+    h('span', { class: 'team-flag', style: 'font-size:1.1rem' }, flagContent(row.team)),
     h('span', { title: row.tie_unresolved ? 'Empate técnico — critérios FIFA esgotados' : '' },
       row.team.name, row.tie_unresolved ? '*' : ''),
     clinchBadge(row),

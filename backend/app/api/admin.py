@@ -117,7 +117,15 @@ def admin_delete_user(
 def admin_user_bets(user_id: int, conn: Db = Depends(get_db)):
     if users_repo.by_id(conn, user_id) is None:
         raise HTTPException(404, "usuario nao encontrado")
-    return {"bets": [m for m in list_matches(conn, user_id) if m["my_bet"]]}
+    matches = list_matches(conn, user_id)
+    # Mostra jogos com os 2 times definidos (apostáveis) + os já apostados,
+    # para o admin registrar/editar inclusive onde o usuário NÃO apostou.
+    return {
+        "bets": [
+            m for m in matches
+            if m["my_bet"] or (m["home"]["team"] and m["away"]["team"])
+        ]
+    }
 
 
 @router.put("/users/{user_id}/bets/{match_id}", dependencies=[Depends(require_csrf)])

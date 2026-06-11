@@ -62,10 +62,19 @@ export function statusLabel(status) {
 }
 
 // Bandeiras de sub-divisões (Inglaterra/Escócia: 🏴 + tags) viram um quadrado
-// preto na maioria dos sistemas. Nesses casos mostramos a sigla do time.
+// preto na maioria dos sistemas. Nesses casos mostramos uma sigla curta de 2
+// letras, renderizada pequena (.flag-abbr) para não destoar das outras.
+const SUBDIV_ABBR = { ENG: 'IN', SCO: 'SC', WAL: 'GA', NIR: 'IN' };
+
+export function flagIsAbbr(team) {
+  if (!team) return false;
+  const f = team.flag || '';
+  return !f || f.codePointAt(0) === 0x1F3F4;
+}
+
 export function teamFlag(team) {
   if (!team) return '';
-  const f = team.flag || '';
-  if (f.codePointAt(0) === 0x1F3F4) return team.code;
-  return f || team.code;
+  if (!flagIsAbbr(team)) return team.flag;
+  const code = team.code || '';
+  return SUBDIV_ABBR[code] || code.slice(0, 2).toUpperCase() || '?';
 }
