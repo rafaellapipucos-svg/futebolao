@@ -1,0 +1,152 @@
+/* ============ VIEWS: login, dashboard, bracket, ranking, perfil, admin ============ */
+
+/* ---- Login ---- */
+.auth-wrap { min-height: 86dvh; display: grid; place-items: center; padding: var(--sp-4); }
+.auth-card { width: min(94vw, 420px); padding: var(--sp-6); display: grid; gap: var(--sp-4); }
+.auth-logo { display: grid; justify-items: center; gap: 6px; margin-bottom: var(--sp-2); }
+.auth-logo svg { width: 54px; height: 54px; }
+.auth-logo h1 { font-size: var(--fs-xl); font-weight: 800; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  background: rgba(0,0,0,0.3); padding: 5px; border-radius: var(--r-md); }
+.auth-tabs button { padding: 9px; border: none; border-radius: var(--r-sm);
+  background: transparent; color: var(--text-2); font-weight: 700; cursor: pointer; }
+.auth-tabs button.active { background: var(--surface-2); color: var(--text-0); }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-2);
+  font-size: var(--fs-xs); }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px;
+  background: var(--border); }
+.auth-error { background: var(--red-soft); color: var(--red);
+  border: 1px solid rgba(255, 93, 106, 0.3); border-radius: var(--r-md);
+  padding: 10px 14px; font-size: var(--fs-sm); font-weight: 600; }
+
+/* ---- Dashboard (tabela ao vivo) ---- */
+.groups-grid { display: grid; gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.group-card { padding: var(--sp-4); overflow-x: auto; } /* 9 colunas em 360px (R2-F5) */
+.group-card h3 { font-size: var(--fs-md); margin-bottom: var(--sp-3);
+  display: flex; align-items: center; justify-content: space-between; }
+.group-letter { color: var(--cyan); font-weight: 800; }
+.standings-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.standings-table th { color: var(--text-2); font-size: var(--fs-xs);
+  font-weight: 700; text-align: center; padding: 4px 3px;
+  border-bottom: 1px solid var(--border); }
+.standings-table th.tname { text-align: left; }
+.standings-table td { padding: 7px 3px; text-align: center;
+  font-family: var(--mono); font-weight: 600; border-bottom: 1px solid var(--border); }
+.standings-table tr:last-child td { border-bottom: none; }
+.standings-table td.tname { font-family: var(--font); text-align: left;
+  display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.standings-table .pts { color: var(--text-0); font-weight: 800; }
+.pos-badge { width: 22px; height: 22px; border-radius: 7px; display: inline-grid;
+  place-items: center; font-size: var(--fs-xs); font-weight: 800;
+  background: var(--surface-2); color: var(--text-1); flex: none; }
+.pos-badge.q { background: var(--green-soft); color: var(--green); }
+.pos-badge.t { background: var(--gold-soft); color: var(--gold); }
+tr.row-live td { background: rgba(255, 93, 106, 0.05); }
+tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+.legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4);
+  color: var(--text-2); font-size: var(--fs-xs); }
+.legend .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block;
+  margin-right: 5px; }
+
+/* ---- Bracket ---- */
+.bracket-scroll { overflow-x: auto; padding-bottom: var(--sp-4); }
+.bracket-cols { display: grid; grid-auto-flow: column; gap: var(--sp-5);
+  min-width: max-content; align-items: stretch; }
+.bracket-col { display: grid; align-content: space-around; gap: var(--sp-3);
+  min-width: 230px; }
+.bracket-col > h4 { text-align: center; color: var(--text-2); font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.08em; position: sticky; top: 0; }
+.bracket-match { padding: 10px 12px; display: grid; gap: 6px; position: relative;
+  border-radius: var(--r-md); }
+.bracket-match .mnum { position: absolute; top: -8px; left: 10px;
+  font-size: 0.6rem; color: var(--text-2); background: var(--bg-1);
+  padding: 1px 6px; border-radius: var(--r-full); border: 1px solid var(--border); }
+.bracket-team { display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  font-size: var(--fs-sm); font-weight: 600; min-height: 24px; }
+.bracket-team .t { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.bracket-team .t span.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 130px; }
+.bracket-team .sc { font-family: var(--mono); font-weight: 800; }
+.bracket-team.winner { color: var(--green); }
+.bracket-team.loser { opacity: 0.55; }
+.bracket-team .lbl { color: var(--text-2); font-size: var(--fs-xs);
+  border: 1px dashed var(--border-strong); padding: 2px 7px; border-radius: 6px; }
+.bracket-final { border: 1px solid rgba(255, 194, 75, 0.4);
+  box-shadow: var(--shadow-glow-gold); }
+.bracket-third { opacity: 0.85; }
+
+/* ---- Ranking ---- */
+.podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3);
+  margin-bottom: var(--sp-5); align-items: end; }
+.podium-slot { padding: var(--sp-4); text-align: center; display: grid;
+  justify-items: center; gap: 8px; }
+.podium-slot .avatar { box-shadow: var(--shadow-glow-green); }
+.podium-slot.first { order: 2; padding-bottom: var(--sp-6);
+  border-color: rgba(255, 194, 75, 0.45); box-shadow: var(--shadow-glow-gold); }
+.podium-slot.second { order: 1; }
+.podium-slot.third { order: 3; }
+.podium-pts { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); }
+.podium-name { font-weight: 700; font-size: var(--fs-sm); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.medal { font-size: 1.3rem; }
+.lb-table { width: 100%; border-collapse: collapse; }
+.lb-table td, .lb-table th { padding: 11px 8px; border-bottom: 1px solid var(--border);
+  font-size: var(--fs-sm); text-align: center; }
+.lb-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700; }
+.lb-table td.player, .lb-table th.player { text-align: left; }
+.lb-table td.player { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.lb-table .pts { font-family: var(--mono); font-weight: 800; }
+.lb-table tr.me td { background: var(--green-soft); }
+.lb-table tr.me td:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.lb-table tr.me td:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.live-delta { color: var(--red); font-size: var(--fs-xs); font-weight: 800;
+  animation: pulse 1.6s infinite; }
+
+/* Como jogar */
+.rules-table { width: 100%; border-collapse: collapse; margin-top: var(--sp-3); }
+.rules-table td, .rules-table th { border: 1px solid var(--border); padding: 8px 10px;
+  font-size: var(--fs-sm); text-align: center; }
+.rules-table th { background: var(--surface-2); }
+.rules-list { display: grid; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.rules-list li { margin-left: var(--sp-4); }
+
+/* ---- Minhas apostas ---- */
+.mybets-summary { display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3); margin-bottom: var(--sp-5); }
+.stat-card { padding: var(--sp-4); text-align: center; display: grid; gap: 4px; }
+.stat-card .val { font-family: var(--mono); font-size: var(--fs-2xl); font-weight: 800; }
+.stat-card .lbl { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---- Perfil ---- */
+.profile-grid { display: grid; gap: var(--sp-4); max-width: 560px; }
+.profile-card { padding: var(--sp-5); display: grid; gap: var(--sp-4); }
+.avatar-edit { position: relative; width: 96px; height: 96px; cursor: pointer;
+  justify-self: center; }
+.avatar-edit .avatar { width: 96px; height: 96px; font-size: 2rem; }
+.avatar-edit .cam { position: absolute; bottom: 0; right: 0;
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--grad-brand); color: var(--text-on-accent);
+  border: 2px solid var(--bg-1); }
+.avatar-edit .cam svg { width: 15px; height: 15px; }
+
+/* ---- Admin ---- */
+.admin-match { padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-3); }
+.admin-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.admin-controls .input { width: 64px; text-align: center; font-family: var(--mono); }
+.admin-controls select.input { width: auto; }
+
+/* ---- Desktop ---- */
+@media (min-width: 880px) {
+  .topnav { display: flex; }
+  .tabbar { display: none; }
+  .shell { padding-bottom: var(--sp-6); }
+  #toasts { bottom: 24px; }
+  .auth-card { padding: var(--sp-7); }
+}
+@media (max-width: 879px) {
+  .page-head h1 { font-size: var(--fs-xl); }
+  .mybets-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat-card .val { font-size: var(--fs-xl); }
+}

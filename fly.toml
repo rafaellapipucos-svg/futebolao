@@ -1,0 +1,30 @@
+# Fly.io — deploy do Futebolão (container único + volume SQLite)
+# Passo a passo completo no README.md
+app = "futebolao-copa26"   # troque pelo nome do seu app (fly apps create)
+primary_region = "gru"      # São Paulo
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DATA_DIR = "/data"
+  COOKIE_SECURE = "true"
+  PORT = "8000"
+
+[mounts]
+  source = "bolao_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = false   # poller de placares precisa ficar de pé
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "15s"
+  method = "GET"
+  path = "/api/health"

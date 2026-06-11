@@ -1,0 +1,65 @@
+/* ============ DESIGN TOKENS — Futebolão Copa 2026 ============ */
+:root {
+  /* Paleta base (dark futurista) */
+  --bg-0: #04070f;
+  --bg-1: #070d1d;
+  --bg-2: #0a1428;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --surface-solid: #0d1830;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  /* Acentos */
+  --green: #00e88f;
+  --green-soft: rgba(0, 232, 143, 0.14);
+  --cyan: #25c2ff;
+  --cyan-soft: rgba(37, 194, 255, 0.13);
+  --gold: #ffc24b;
+  --gold-soft: rgba(255, 194, 75, 0.14);
+  --red: #ff5d6a;
+  --red-soft: rgba(255, 93, 106, 0.13);
+  --violet: #9d7bff;
+
+  --grad-brand: linear-gradient(92deg, var(--green), var(--cyan));
+  --grad-gold: linear-gradient(92deg, #ffd98a, var(--gold));
+
+  /* Texto */
+  --text-0: #f2f7ff;
+  --text-1: #b9c6dd;
+  --text-2: #7e8ca6;
+  --text-on-accent: #04240f;
+
+  /* Tipografia (system stack, sem CDN) */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.84rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.12rem;
+  --fs-xl: 1.45rem;
+  --fs-2xl: 2rem;
+
+  /* Forma */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 999px;
+
+  --shadow-1: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow-green: 0 0 24px rgba(0, 232, 143, 0.18);
+  --shadow-glow-gold: 0 0 32px rgba(255, 194, 75, 0.22);
+
+  --blur: 14px;
+
+  /* Espaços */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* Layout */
+  --max-w: 1180px;
+  --nav-h: 60px;
+  --tabbar-h: 62px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}

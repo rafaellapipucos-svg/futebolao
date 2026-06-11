@@ -1,0 +1,29 @@
+# Blueprint Render (opcional): New + -> Blueprint -> aponte para o repo.
+# Ou crie um Web Service manualmente (runtime Docker) com estas variaveis.
+services:
+  - type: web
+    name: futebolao
+    runtime: docker
+    plan: free            # free dorme apos inatividade; veja README "Render free"
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL  # cole a connection string do Supabase no painel
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: PEPPER
+        sync: false
+      - key: ADMIN_EMAILS
+        value: rafaellapipucos@gmail.com
+      - key: PUBLIC_BASE_URL
+        sync: false        # ex.: https://futebolao.onrender.com
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: FOOTBALL_DATA_TOKEN
+        sync: false
+      - key: INVITE_CODE
+        sync: false

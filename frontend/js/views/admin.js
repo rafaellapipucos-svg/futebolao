@@ -1,0 +1,176 @@
+// views/admin.js — placar manual, lock por jogo, sync da API e usuários.
+import { ApiError, api } from '../api.js';
+import { ensureData } from '../data.js';
+import { fmtTime, fmtDayLong } from '../format.js';
+import { emptyState, h, modal, skeletonList, toast } from '../ui.js';
+
+async function call(path, json, okMsg, store) {
+  try {
+    const resp = await api.post(path, json);
+    toast(okMsg);
+    store.set({ matches: null, standings: null, leaderboard: null, bracket: null });
+    return resp;
+  } catch (err) {
+    toast(err instanceof ApiError ? err.message : 'falha na operação', 'err');
+    return null;
+  }
+}
+
+function sideName(side) {
+  return side.team ? `${side.team.flag} ${side.team.code}` : side.label;
+}
+
+function scoreControls(store, m) {
+  const home = h('input', { class: 'input', type: 'number', min: '0', max: '99',
+    value: String(m.home_score ?? 0), 'aria-label': 'gols mandante' });
+  const away = h('input', { class: 'input', type: 'number', min: '0', max: '99',
+    value: String(m.away_score ?? 0), 'aria-label': 'gols visitante' });
+  const minute = h('input', { class: 'input', type: 'number', min: '0', max: '130',
+    value: String(m.minute ?? ''), placeholder: "min'" });
+  const winner = h('select', { class: 'input', 'aria-label': 'vencedor (se empate no mata-mata)' },
+    h('option', { value: '' }, 'pênaltis: vencedor…'),
+    m.home.team ? h('option', { value: String(m.home.team.id) }, m.home.team.code) : null,
+    m.away.team ? h('option', { value: String(m.away.team.id) }, m.away.team.code) : null,
+  );
+  const payload = (status) => {
+    const body = {
+      home_score: parseInt(home.value, 10) || 0,
+      away_score: parseInt(away.value, 10) || 0,
+      status,
+    };
+    const min = parseInt(minute.value, 10);
+    if (Number.isInteger(min)) body.minute = min;
+    if (winner.value) body.winner_team_id = parseInt(winner.value, 10);
+    if (m.status === 'finished') body.force = true;
+    return body;
+  };
+  const showWinner = m.stage !== 'GROUP';
+  const btn = (label, status, cls = 'btn btn-sm') => h('button', {
+    class: cls,
+    type: 'button',
+    onClick: () => call(`/api/admin/matches/${m.id}/score`, payload(status),
+      `J${m.id}: ${label} ✓`, store),
+  }, label);
+  return h('div', { class: 'admin-controls' },
+    home, h('span', { class: 'score-x' }, 'x'), away, minute,
+    showWinner ? winner : null,
+    btn('Ao vivo', 'live'),
+    btn('Encerrar', 'finished', 'btn btn-sm btn-primary'),
+    h('button', {
+      class: 'btn btn-sm',
+      type: 'button',
+      title: m.manual_lock ? 'API liberada para este jogo' : 'Travar contra a API (modo manual)',
+      onClick: async () => {
+        try {
+          await api.post(`/api/admin/matches/${m.id}/lock?lock=${!m.manual_lock}`, {});
+          toast(`J${m.id}: lock ${!m.manual_lock ? 'ativado' : 'removido'}`);
+          store.set({ matches: null });
+        } catch (err) {
+          toast(err instanceof ApiError ? err.message : 'falha', 'err');
+        }
+      },
+    }, m.manual_lock ? '🔒 manual' : '🔓 api'),
+    h('button', {
+      class: 'btn btn-sm btn-danger',
+      type: 'button',
+      onClick: () => call(`/api/admin/matches/${m.id}/reset`, {},
+        `J${m.id} resetado`, store),
+    }, 'Reset'),
+  );
+}
+
+function adminMatchRow(store, m) {
+  return h('div', { class: 'glass admin-match' },
+    h('div', { class: 'row spread' },
+      h('div', { class: 'row', style: 'gap:8px;flex-wrap:wrap' },
+        h('span', { class: 'chip chip-cyan' }, `J${m.id}`),
+        h('span', { class: 'chip' }, m.stage_label, m.group ? ` · G${m.group}` : ''),
+        h('b', {}, `${sideName(m.home)} × ${sideName(m.away)}`),
+      ),
+      h('span', { class: 'muted small' },
+        `${fmtDayLong(m.kickoff_utc)} · ${fmtTime(m.kickoff_utc)}`,
+        m.status === 'live' ? ' · 🔴 AO VIVO' : m.status === 'finished' ? ' · encerrado' : ''),
+    ),
+    scoreControls(store, m),
+  );
+}
+
+function usersSection(store, users) {
+  const resetPw = (u) => {
+    const input = h('input', { class: 'input', type: 'text',
+      placeholder: 'nova senha (mín. 8)' });
+    const btn = h('button', { class: 'btn btn-primary', type: 'button' }, 'Redefinir');
+    const dlg = modal(`Redefinir senha — ${u.display_name}`,
+      h('div', { style: 'display:grid;gap:12px' },
+        h('p', { class: 'muted small' }, u.email), input, btn));
+    btn.addEventListener('click', async () => {
+      try {
+        await api.post(`/api/admin/users/${u.id}/reset-password`,
+          { new_password: input.value });
+        toast('Senha redefinida; sessões do usuário revogadas.');
+        dlg.close();
+      } catch (err) {
+        toast(err instanceof ApiError ? err.message : 'falha', 'err');
+      }
+    });
+  };
+  return h('div', { class: 'glass', style: 'padding:16px;display:grid;gap:8px' },
+    h('h3', {}, `Usuários (${users.length})`),
+    users.map((u) => h('div', { class: 'row spread', style: 'border-bottom:1px solid var(--border);padding:6px 0' },
+      h('span', {}, u.display_name, ' ',
+        h('span', { class: 'muted small' }, u.email),
+        u.is_admin ? h('span', { class: 'chip chip-gold', style: 'margin-left:6px' }, 'admin') : null),
+      h('button', { class: 'btn btn-sm', type: 'button', onClick: () => resetPw(u) },
+        'Redefinir senha'),
+    )),
+  );
+}
+
+let usersCache = null;
+
+export function renderAdmin(store, state) {
+  const data = ensureData(store, 'matches');
+  if (usersCache === null) {
+    usersCache = { loading: true };
+    api.get('/api/admin/users')
+      .then((resp) => { usersCache = resp.users; store.set({}); })
+      .catch(() => { usersCache = []; store.set({}); });
+  }
+  let content;
+  if (data === null) {
+    content = skeletonList(4, 120);
+  } else if (data.error) {
+    content = emptyState('bolt', 'Falha ao carregar.', data.error);
+  } else {
+    const now = Date.now();
+    const sorted = [...data.matches].sort((a, b) => {
+      const rank = (m) => (m.status === 'live' ? 0 : m.status === 'scheduled' ? 1 : 2);
+      if (rank(a) !== rank(b)) return rank(a) - rank(b);
+      const da = Math.abs(new Date(a.kickoff_utc) - now);
+      const db = Math.abs(new Date(b.kickoff_utc) - now);
+      return da - db;
+    }).slice(0, 14);
+    content = h('div', { style: 'display:grid;gap:12px' },
+      sorted.map((m) => adminMatchRow(store, m)));
+  }
+  return h('div', { class: 'page' },
+    h('div', { class: 'page-head' },
+      h('div', {},
+        h('h1', {}, 'Painel ', h('span', { class: 'grad-text' }, 'admin')),
+        h('p', { class: 'sub' }, 'Jogos ao vivo e próximos primeiro · placar manual vence a API com 🔒'),
+      ),
+      h('div', { class: 'row' },
+        state.config.live_provider ? h('button', {
+          class: 'btn',
+          onClick: () => call('/api/admin/sync', {}, 'Sync com football-data feito', store),
+        }, '⟳ Sync API') : h('span', { class: 'chip' }, 'modo manual (sem token de API)'),
+        h('button', {
+          class: 'btn',
+          onClick: () => call('/api/admin/recompute', {}, 'Chaveamento recalculado', store),
+        }, 'Recalcular chaveamento'),
+      ),
+    ),
+    content,
+    Array.isArray(usersCache) ? usersSection(store, usersCache) : null,
+  );
+}

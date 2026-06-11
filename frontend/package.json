@@ -1,0 +1,10 @@
+{
+  "name": "futebolao-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SPA sem build - ES modules nativos servidos pelo FastAPI.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
+}
