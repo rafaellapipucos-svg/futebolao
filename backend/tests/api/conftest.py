@@ -57,6 +57,12 @@ def client(app):
         yield c
 
 
+@pytest.fixture
+def anyio_backend():
+    """Backend unico p/ testes async (ex.: SSE via httpx.ASGITransport)."""
+    return "asyncio"
+
+
 def csrf(client: TestClient) -> dict:
     """Garante cookie CSRF e retorna o header para métodos mutantes."""
     if "csrf_token" not in client.cookies:

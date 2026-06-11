@@ -1,5 +1,8 @@
 import io
 
+import anyio
+import httpx
+import pytest
 from PIL import Image
 
 from .conftest import csrf
@@ -93,12 +96,22 @@ def test_perfil_nome_e_senha(client, user):
     assert ok.status_code == 200
 
 
-def test_sse_responde_event_stream(client):
-    with client.stream("GET", "/api/live/sse") as resp:
-        assert resp.status_code == 200
-        assert resp.headers["content-type"].startswith("text/event-stream")
-        first = next(resp.iter_lines())
-        assert first.startswith("retry:")
+@pytest.mark.anyio
+async def test_sse_responde_event_stream(app):
+    """O endpoint SSE e' um generator infinito (ping a cada 25s). Com o
+    TestClient sincrono (transporte via thread/portal), o close() do
+    `with` nao garante que request.is_disconnected() vire True a tempo,
+    e o teste pode ficar pendurado para sempre. Usando ASGITransport na
+    mesma event loop do teste, sair do `async with` cancela a task da
+    geracao de fato; o anyio.fail_after e' um teto extra de seguranca."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        async with ac.stream("GET", "/api/live/sse") as resp:
+            assert resp.status_code == 200
+            assert resp.headers["content-type"].startswith("text/event-stream")
+            with anyio.fail_after(5):
+                first = await anext(resp.aiter_lines())
+            assert first.startswith("retry:")
 
 
 def test_oauth_start_sem_config_503(client):

@@ -97,3 +97,28 @@
   `git add .gitignore backend/app/seed/data`;
   `git commit -m "fix: versiona seed (gitignore ancorado em /data/)"`;
   `git push origin master`. Render re-builda e o gate de testes acha os arquivos.
+
+## Rodada 5 — fix gate trava no build (Google Cloud, 2026-06-11)
+- I004 RESOLVIDO: build (Cloud Build/Run) trava no step 12/25 (`RUN python
+  run_core_tests.py && python -m pytest tests/api -q`) — run_core_tests.py
+  termina OK (148 testes), mas pytest tests/api fica pendurado p/ sempre,
+  sem erro. Causa: test_sse_responde_event_stream usa
+  `with client.stream(...)` (TestClient sincrono = transporte por
+  thread/portal); o close() ao sair do `with` nao garante que
+  request.is_disconnected() vire True a tempo p/ o generator infinito do
+  SSE (ping a cada 25s) retornar — resp.close() fica pendurado para sempre.
+  Fix: reescrito o teste com httpx.ASGITransport (mesma event loop do
+  teste, sem thread) + anyio.fail_after(5) como teto extra; adicionado
+  `pytest-timeout` (timeout=60 global em backend/pytest.ini) como rede de
+  seguranca p/ qualquer trava futura falhar rapido em vez de pendurar o
+  build. anyio + pytest-timeout adicionados a requirements-dev.txt;
+  anyio_backend fixture em conftest.py. [TOOL] 2026-06-11
+- I001 reincidiu (3x): Edit truncou conftest.py, test_http_misc.py,
+  pytest.ini, requirements-dev.txt e este CONTINUITY.md apos escrita.
+  Reescritos via heredoc bash + verificacao repetida com sleep. [TOOL]
+- NOTA: usuario tambem testando deploy via Google Cloud (Cloud Build/Run),
+  alem de Render — mesmo Dockerfile/gate serve para ambos.
+- NEXT [USER] (maquina local, no repo): commitar
+  backend/tests/api/conftest.py, backend/tests/api/test_http_misc.py,
+  backend/pytest.ini, backend/requirements-dev.txt; push; re-disparar o
+  build.
