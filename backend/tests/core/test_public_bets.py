@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.db.repos import matches as matches_repo
 from app.db.repos import users as users_repo
@@ -22,7 +22,10 @@ class TestPublicBets(unittest.TestCase):
         self.conn.close()
 
     def test_escondido_antes_do_kickoff(self):
-        # jogo 2 tem kickoff no futuro -> aposta aberta -> escondida
+        # move o kickoff do jogo 2 p/ o futuro (independente do relógio) ->
+        # aposta aberta -> apostas escondidas até começar
+        future = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+        self.conn.execute("UPDATE matches SET kickoff_utc = ? WHERE id = ?", (future, 2))
         place_bet(self.conn, self.alice, 2, 1, 0)
         data = match_bets_public(self.conn, 2)
         self.assertFalse(data["revealed"])

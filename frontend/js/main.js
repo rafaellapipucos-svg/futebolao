@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { renderShell } from './layout.js';
 import { resolveRoute, startRouter } from './router.js';
 import { connectLive } from './sse.js';
+import { prefetch } from './data.js';
 import { store } from './store.js';
 import { h } from './ui.js';
 import { renderAdmin } from './views/admin.js';
@@ -100,6 +101,15 @@ async function boot() {
 
   ensureLiveConnection(store.get());
   renderApp(store.get());
+
+  // Aquece as abas principais em 2º plano (após o 1º paint) p/ navegação
+  // instantânea. SSE mantém tudo fresco depois.
+  if (store.get().user) {
+    setTimeout(
+      () => prefetch(store, ['matches', 'standings', 'leaderboard', 'bracket']),
+      600,
+    );
+  }
 }
 
 boot();

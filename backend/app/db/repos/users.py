@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from ..connection import Db, insert_id
-from ..schema import bump_users_version
 
 
 def _now() -> str:
@@ -26,7 +25,6 @@ def create(
         "VALUES (?, ?, ?, ?, ?, ?)",
         (email, display_name, password_hash, google_sub, int(is_admin), _now()),
     )
-    bump_users_version(conn)  # novo usuario aparece no ranking na hora
     return user_id
 
 
@@ -49,13 +47,11 @@ def set_password(conn: Db, user_id: int, password_hash: str) -> None:
 
 
 def set_bio(conn: Db, user_id: int, bio) -> None:
-    # bio não entra no ranking, então não bumpa users_version.
     conn.execute("UPDATE users SET bio = ? WHERE id = ?", (bio, user_id))
 
 
 def set_display_name(conn: Db, user_id: int, name: str) -> None:
     conn.execute("UPDATE users SET display_name = ? WHERE id = ?", (name, user_id))
-    bump_users_version(conn)
 
 
 def set_google_sub(conn: Db, user_id: int, sub: str) -> None:
@@ -70,7 +66,6 @@ def bump_avatar(conn: Db, user_id: int) -> int:
     conn.execute(
         "UPDATE users SET avatar_ver = avatar_ver + 1 WHERE id = ?", (user_id,)
     )
-    bump_users_version(conn)  # ranking reflete a nova foto na hora
     row = conn.execute(
         "SELECT avatar_ver FROM users WHERE id = ?", (user_id,)
     ).fetchone()
@@ -91,4 +86,3 @@ def delete(conn: Db, user_id: int) -> None:
     conn.execute("DELETE FROM refresh_tokens WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM avatars WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    bump_users_version(conn)

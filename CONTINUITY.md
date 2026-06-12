@@ -310,3 +310,26 @@ kickoff; perfil público com ranking+pontos. Fundações F0 PRONTAS:
   live junto. Novos endpoints: /api/users/{id}, /api/live/matches,
   /api/matches/{id}/bets (todos exigem login; público não vaza email/Google).
 - NEXT [USER]: git add -A && commit && push origin master (deploy Cloud Run).
+
+### Rodada 12 — performance percebida (2026-06-11)
+- openProfile agora abre o modal INSTANTÂNEO com skeleton e preenche ao chegar
+  (antes dava await antes de abrir → sem feedback). [CODE profile_modal.js]
+- data.prefetch + main.js: 600ms após o 1º paint, aquece matches/standings/
+  leaderboard/bracket em 2º plano → abas ficam instantâneas (cache + SSE). [CODE]
+- NOTA cold start: "1ª carga lenta após recarregar" é principalmente cold start
+  do Cloud Run (min-instances=0 → container dorme). Fix real = min-instances=1
+  (config no Cloud Run, custa um pouco), não código. [USER decide]
+- core 160, node 24, node --check ok, contraste tokenizado.
+
+### Rodada 12b — cache do ranking em 2 camadas (2026-06-11)
+- D017 ACTIVE: leaderboard separa PONTUAÇÃO (cache por data_version — só muda com
+  placar/edição-admin) da EXIBIÇÃO (users_repo.list_all mesclado FRESCO a cada
+  chamada: quem entrou/nome/foto sempre atuais). Perfil reusa o índice cacheado,
+  NÃO recalcula por abertura. [CODE leaderboard.py]
+- users_version REMOVIDO (virou redundante): a mescla fresca já reflete membership/
+  nome/foto sem re-pontuar. Tirados os bumps (users.py) e get/bump_users_version +
+  seed (schema.py). Comentário do test_leaderboard atualizado.
+- I009: relógio-bomba em test_public_bets (apostava no jogo 2 já passado) — teste
+  agora move o kickoff p/ o futuro (clock-independent).
+- Verde: core 160, node 24, node --check ok, contraste tokenizado.
+- min-instances: setting do Cloud Run (console), não do repo — usuário já pôs 1.

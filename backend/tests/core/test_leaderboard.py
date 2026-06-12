@@ -93,7 +93,7 @@ class TestLeaderboard(unittest.TestCase):
     def test_cache_invalida_quando_usuarios_mudam(self):
         # Regressao do bug de producao: novo usuario / troca de avatar NAO
         # bumpava data_version, entao o ranking ficava preso no cache antigo
-        # (so o 1o usuario, foto velha). Agora users_version invalida o cache.
+        # (so o 1o usuario, foto velha). Agora a lista de usuarios e mesclada fresca.
         matches_repo.set_score(self.conn, 1, 2, 1, "finished")
         self.assertNotIn("Eva", {r["display_name"] for r in leaderboard(self.conn)})
         eva_id = users_repo.create(self.conn, "eva@b.c", "Eva")

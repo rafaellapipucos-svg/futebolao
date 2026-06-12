@@ -28,6 +28,11 @@ export function ensureData(store, key) {
   return null;
 }
 
+/** Aquece o cache das abas principais em segundo plano (tabs ficam instantâneas). */
+export function prefetch(store, keys) {
+  for (const key of keys) ensureData(store, key);
+}
+
 /** Atualiza uma partida dentro do cache de matches (pós-aposta, sem refetch). */
 export function patchMatch(store, matchId, patch) {
   const cache = store.get().matches;

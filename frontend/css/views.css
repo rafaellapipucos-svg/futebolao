@@ -197,6 +197,7 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
 
 /* ---- Perfil público (modal) ---- */
 .pubprof-head { display: flex; align-items: center; gap: 14px; }
+.pubprof-name { margin: 0; font-size: var(--fs-lg); }
 .pubprof-bio { color: var(--text-1); }
 .clickable { cursor: pointer; }
 .clickable:hover { background: var(--hover); }
