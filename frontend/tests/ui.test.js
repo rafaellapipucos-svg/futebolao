@@ -30,3 +30,11 @@ test('flagContent: bandeira normal continua emoji (string), sem span', () => {
   const out = flagContent({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA', name: 'Brasil' });
   assert.equal(typeof out, 'string');
 });
+
+const { outcomeClass } = await import('../js/views/profile.js');
+test('outcomeClass: cravada=dourado, resultado=verde, erro=vermelho', () => {
+  assert.equal(outcomeClass({ hit_exact: true, hit_result: true }), 'hist-gold');
+  assert.equal(outcomeClass({ hit_exact: false, hit_result: true }), 'hist-green');
+  assert.equal(outcomeClass({ hit_exact: false, hit_result: false }), 'hist-red');
+  assert.equal(outcomeClass(null), '');
+});

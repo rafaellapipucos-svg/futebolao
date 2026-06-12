@@ -154,3 +154,95 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
   .mybets-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .stat-card .val { font-size: var(--fs-xl); }
 }
+
+/* ---- Perfil: histórico de palpites ---- */
+.profile-history { margin-top: var(--sp-4); }
+.hist-list { display: grid; gap: 8px; margin-top: var(--sp-3); }
+.hist-item { display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 12px; border-radius: var(--r-md);
+  border: 1px solid var(--border); border-left: 4px solid var(--border);
+  background: var(--surface); }
+.hist-item.hist-green { border-left-color: var(--green); }
+.hist-item.hist-red { border-left-color: var(--red); }
+.hist-item.hist-gold { border-left-color: var(--gold); }
+.hist-pts { font-family: var(--mono); font-weight: 800; flex: none; }
+.hist-green .hist-pts { color: var(--green); }
+.hist-red .hist-pts { color: var(--red); }
+.hist-gold .hist-pts { color: var(--gold); }
+.dot-gold, .dot-green, .dot-red { display: inline-block; width: 9px; height: 9px;
+  border-radius: 3px; vertical-align: middle; }
+.dot-gold { background: var(--gold); }
+.dot-green { background: var(--green); }
+.dot-red { background: var(--red); }
+
+/* ---- Ao Vivo ---- */
+.live-card { padding: var(--sp-4); display: grid; gap: var(--sp-3); }
+.live-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: var(--sp-3); }
+.live-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.live-team.right { justify-content: flex-end; }
+.live-score { display: grid; justify-items: center; gap: 4px;
+  font-size: var(--fs-xl); font-family: var(--mono); }
+.live-bettors { display: grid; gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.live-bettor { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; text-align: left; color: inherit;
+  transition: background .15s, border-color .15s; }
+.live-bettor:hover { background: var(--hover); border-color: var(--border-strong); }
+.live-bettor-name { font-weight: 600; font-size: var(--fs-sm); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-bettor-pts { font-family: var(--mono); font-weight: 800; color: var(--text-2);
+  flex: none; }
+
+/* ---- Perfil público (modal) ---- */
+.pubprof-head { display: flex; align-items: center; gap: 14px; }
+.pubprof-bio { color: var(--text-1); }
+.clickable { cursor: pointer; }
+.clickable:hover { background: var(--hover); }
+
+/* ============ Polish / redesign — Rodada 11 (fase G) ============ */
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-border); }
+  50% { box-shadow: 0 0 22px 1px var(--gold-border); }
+}
+
+/* Cards interativos: leve elevação no hover */
+.match-card, .live-card, .bracket-match {
+  transition: transform .18s var(--ease), box-shadow .18s, border-color .18s;
+}
+.match-card:hover, .live-card:hover, .bracket-match:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-1);
+  border-color: var(--border-strong);
+}
+
+/* Filtros / fases: brilho no ativo */
+.filterbar .chip { transition: background .2s, box-shadow .2s, transform .12s; }
+.filterbar .chip.active { box-shadow: var(--shadow-glow-green); }
+.filterbar .chip:not(.active):hover { background: var(--hover); transform: translateY(-1px); }
+
+/* ----- Ranking ----- */
+.podium-slot { transition: transform .2s var(--ease), box-shadow .2s; }
+.podium-slot:hover { transform: translateY(-4px); }
+.podium-slot.first {
+  background: linear-gradient(180deg, var(--gold-soft), transparent 72%);
+  animation: glowPulse 3.4s ease-in-out infinite;
+}
+.podium-slot.first .avatar { box-shadow: var(--shadow-glow-gold);
+  animation: floatY 3s ease-in-out infinite; }
+.podium-slot .medal { font-size: 1.5rem; filter: drop-shadow(0 2px 6px var(--overlay)); }
+.podium-slot.first .medal { font-size: 1.95rem; }
+.lb-table tbody tr { transition: background .15s; }
+.lb-table tbody tr:hover td { background: var(--hover); }
+.lb-table tbody tr:nth-child(1) td:first-child { color: var(--gold); font-weight: 800; }
+.lb-table tbody tr:nth-child(2) td:first-child { color: var(--text-1); font-weight: 800; }
+.lb-table tbody tr:nth-child(3) td:first-child { color: var(--cyan); font-weight: 800; }
+
+/* ----- Mata-mata ----- */
+.bracket-team.winner { font-weight: 800; }
+.bracket-match.bracket-final { animation: glowPulse 3.6s ease-in-out infinite; }
+.bracket-list .bracket-match { animation: fadeUp .3s var(--ease) both; }
+
+/* Botões: micro-interação */
+.btn:active { transform: translateY(0) scale(.98); }

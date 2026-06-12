@@ -31,6 +31,15 @@
 .userchip:hover { border-color: var(--border-strong); }
 .userchip .name { font-size: var(--fs-sm); font-weight: 600; max-width: 110px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-area { display: flex; align-items: center; gap: 8px; }
+.logoutbtn { display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: var(--r-full); flex: none;
+  border: 2px solid var(--red); background: var(--red-soft); color: var(--red);
+  cursor: pointer; transition: box-shadow .2s, transform .15s; }
+.logoutbtn:hover { transform: translateY(-1px);
+  box-shadow: 0 0 0 3px var(--red-faint); }
+textarea.input { min-height: 74px; resize: vertical; line-height: 1.45;
+  font-family: var(--font); padding: 10px 12px; }
 
 /* Avatar */
 .avatar {

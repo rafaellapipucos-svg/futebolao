@@ -38,18 +38,23 @@ export function renderMyBets(store) {
     const withBets = data.matches.filter((m) => m.my_bet);
     summaryEl = summary(withBets);
     const future = data.matches.filter((m) => m.bet_open);
-    // Encerradas incluem jogos que o usuário NÃO apostou (ficam registrados
-    // como "não apostou"), não só os apostados.
+    const live = data.matches.filter((m) => m.status === 'live');
+    // Encerradas = só jogos FINALIZADOS (os ao vivo ficam na aba Ao vivo);
+    // inclui quem NÃO apostou (fica registrado como "não apostou").
     const closed = data.matches
-      .filter((m) => !m.bet_open && m.status !== 'scheduled')
+      .filter((m) => m.status === 'finished')
       .sort((a, b) => b.kickoff_utc.localeCompare(a.kickoff_utc));
-    const list = activeTab === 'future' ? future : closed;
+    const list = activeTab === 'future' ? future
+      : activeTab === 'live' ? live : closed;
     if (list.length === 0) {
       content = activeTab === 'future'
         ? emptyState('ball', 'Nenhum jogo aberto para aposta agora.',
           'Novos confrontos abrem assim que ficarem definidos.')
-        : emptyState('list', 'Nenhuma aposta encerrada ainda.',
-          'Suas apostas passadas e os pontos ganhos aparecem aqui.');
+        : activeTab === 'live'
+          ? emptyState('live', 'Nenhum jogo ao vivo agora.',
+            'Quando rolar jogo, sua aposta dele aparece aqui em tempo real.')
+          : emptyState('list', 'Nenhuma aposta encerrada ainda.',
+            'Suas apostas passadas e os pontos ganhos aparecem aqui.');
     } else {
       content = h('div', { style: 'display:grid;gap:14px' },
         list.map((m) => matchCard(store, m)));
@@ -70,6 +75,7 @@ export function renderMyBets(store) {
     summaryEl,
     h('div', { class: 'filterbar' },
       tab('future', '🟢 Futuras (editáveis)'),
+      tab('live', '🔴 Ao vivo'),
       tab('closed', '🔒 Encerradas'),
     ),
     content,

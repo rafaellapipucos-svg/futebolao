@@ -28,4 +28,5 @@ export const store = createStore({
   standings: null,
   leaderboard: null,
   bracket: null,
+  live: null,
 });

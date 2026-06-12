@@ -6,6 +6,7 @@ const ENDPOINTS = {
   matches: '/api/matches',
   leaderboard: '/api/leaderboard',
   bracket: '/api/bracket',
+  live: '/api/live/matches',
 };
 
 const inflight = new Set();

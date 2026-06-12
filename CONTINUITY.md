@@ -286,3 +286,27 @@ kickoff; perfil público com ranking+pontos. Fundações F0 PRONTAS:
 - FALTAM (próxima leva): C perfil (descrição/histórico/botões sair-perfil),
   D aba Ao Vivo + sub-bio, E perfis clicáveis, F-live, G redesign ranking/
   mata-mata + animações, H crítica. Fundações p/ tudo isso já prontas (F0.*).
+
+### Rodada 11 — CONCLUÍDA (fases C–H) 2026-06-11
+- C [CODE] perfil reformulado: aba "Perfil" saiu da navbar; foto abre o perfil;
+  botão SAIR = portinha com círculo vermelho (.logoutbtn, maior); caixa de
+  DESCRIÇÃO (bio via PATCH); HISTÓRICO colorido (dourado=cravada, verde=
+  resultado, vermelho=erro). Email saiu do subtítulo (vai num card). outcomeClass
+  testado (ui.test).
+- D [CODE] nova aba "Ao Vivo" (views/live.js, rota ao-vivo): jogos LIVE agora +
+  foto/nome/aposta pública de cada jogador (revelada no apito). Sub-bio do perfil
+  coberta na fase C.
+- E [CODE] views/profile_modal.openProfile: clicar em jogador (ranking/podium e
+  aba Ao Vivo) abre perfil público (nome/foto/descrição/ranking+pts/histórico;
+  sem email/Google).
+- F-live [CODE] aba "Ao vivo" em Minhas Apostas (status=live); Encerradas agora
+  = só finished (live não aparece lá).
+- G [CODE] redesign/polish (CSS, 100% via token): pódio #1 com glow/float, top-3
+  coloridos, hover em cards (match/live/bracket), glow no filtro ativo, final do
+  mata-mata pulsante, micro-interações; keyframes floatY/glowPulse.
+- H: revisão crítica + verificação. core 160, node 24, node --check 0 fail,
+  py_compile ok, contraste 100% tokenizado, todos <250 linhas. SEM pendências.
+- D016: novas chaves de cache no front: store.live + ENDPOINTS.live; SSE invalida
+  live junto. Novos endpoints: /api/users/{id}, /api/live/matches,
+  /api/matches/{id}/bets (todos exigem login; público não vaza email/Google).
+- NEXT [USER]: git add -A && commit && push origin master (deploy Cloud Run).

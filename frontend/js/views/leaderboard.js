@@ -1,6 +1,7 @@
 // views/leaderboard.js — Aba 4: ranking com parciais ao vivo + "Como Jogar".
 import { ensureData } from '../data.js';
 import { avatarEl, emptyState, h, modal, skeletonList } from '../ui.js';
+import { openProfile } from './profile_modal.js';
 
 function howToPlayContent() {
   return h('div', {},
@@ -38,7 +39,8 @@ function howToPlayContent() {
 function podium(rows) {
   const [first, second, third] = rows;
   const slot = (entry, cls, medal) => (entry
-    ? h('div', { class: `glass podium-slot ${cls}` },
+    ? h('div', { class: `glass podium-slot clickable ${cls}`,
+      title: 'Ver perfil', onClick: () => openProfile(entry.user_id) },
       h('span', { class: 'medal' }, medal),
       avatarEl(entry.avatar_url, entry.display_name, cls === 'first' ? 64 : 50),
       h('span', { class: 'podium-name' }, entry.display_name),
@@ -53,7 +55,8 @@ function podium(rows) {
 function tableRows(rows) {
   return rows.map((r) => h('tr', { class: r.is_me ? 'me' : '' },
     h('td', {}, String(r.position)),
-    h('td', { class: 'player' },
+    h('td', { class: 'player clickable', title: 'Ver perfil',
+      onClick: () => openProfile(r.user_id) },
       avatarEl(r.avatar_url, r.display_name, 30),
       h('span', {}, r.display_name, r.is_me ? ' (você)' : '')),
     h('td', { class: 'pts' }, String(r.total),

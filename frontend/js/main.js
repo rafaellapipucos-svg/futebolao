@@ -9,6 +9,7 @@ import { renderAdmin } from './views/admin.js';
 import { renderBracket } from './views/bracket.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderLeaderboard } from './views/leaderboard.js';
+import { renderLive } from './views/live.js';
 import { renderLogin } from './views/login.js';
 import { renderMatches } from './views/matches.js';
 import { renderMyBets } from './views/mybets.js';
@@ -19,6 +20,7 @@ const VIEWS = {
   dashboard: { render: renderDashboard, shell: true },
   jogos: { render: renderMatches, shell: true },
   chaveamento: { render: renderBracket, shell: true },
+  'ao-vivo': { render: renderLive, shell: true },
   ranking: { render: renderLeaderboard, shell: true },
   apostas: { render: renderMyBets, shell: true },
   perfil: { render: renderProfile, shell: true },
@@ -51,7 +53,7 @@ function ensureLiveConnection(state) {
         // invalida caches: a view ativa refaz o fetch e re-renderiza
         store.set({
           liveVersion: version,
-          matches: null, standings: null, leaderboard: null, bracket: null,
+          matches: null, standings: null, leaderboard: null, bracket: null, live: null,
         });
       }
     });

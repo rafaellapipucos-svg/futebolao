@@ -7,10 +7,10 @@ import { getTheme, toggleTheme } from './theme.js';
 const NAV_ITEMS = [
   { route: 'dashboard', label: 'Tabela', icon: 'table' },
   { route: 'jogos', label: 'Jogos', icon: 'ball' },
+  { route: 'ao-vivo', label: 'Ao Vivo', icon: 'live' },
   { route: 'chaveamento', label: 'Mata-mata', icon: 'bracket' },
   { route: 'ranking', label: 'Ranking', icon: 'trophy' },
   { route: 'apostas', label: 'Apostas', icon: 'list' },
-  { route: 'perfil', label: 'Perfil', icon: 'user' },
 ];
 
 function brandLogo() {
@@ -46,15 +46,18 @@ export function renderShell(store, state, contentEl) {
     }, item.label)),
   );
 
-  const userchip = h('button', {
-    class: 'userchip', title: 'Sair da conta',
-    onClick: () => doLogout(store),
+  const profileBtn = h('button', {
+    class: 'userchip', title: 'Meu perfil',
+    onClick: () => navigate('perfil'),
   },
     avatarEl(state.user ? state.user.avatar_url : null,
-      state.user ? state.user.display_name : '?', 30),
+      state.user ? state.user.display_name : '?', 32),
     h('span', { class: 'name' }, state.user ? state.user.display_name : ''),
-    icon('logout', 15),
   );
+  const logoutBtn = h('button', {
+    class: 'logoutbtn', title: 'Sair da conta', 'aria-label': 'sair da conta',
+    onClick: () => doLogout(store),
+  }, icon('logout', 19));
 
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'abas' },
     items.map((item) => h('a', {
@@ -73,7 +76,8 @@ export function renderShell(store, state, contentEl) {
   }, icon(getTheme() === 'dark' ? 'sun' : 'moon', 18));
 
   return h('div', { class: 'shell' },
-    h('header', { class: 'topbar' }, brandLogo(), topnav, themeBtn, userchip),
+    h('header', { class: 'topbar' }, brandLogo(), topnav,
+      h('div', { class: 'user-area' }, themeBtn, profileBtn, logoutBtn)),
     h('main', {}, contentEl),
     tabbar,
   );

@@ -5,6 +5,7 @@ export const ROUTES = {
   dashboard: { auth: true },
   jogos: { auth: true },
   chaveamento: { auth: true },
+  'ao-vivo': { auth: true },
   ranking: { auth: true },
   apostas: { auth: true },
   perfil: { auth: true },
