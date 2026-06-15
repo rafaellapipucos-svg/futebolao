@@ -61,9 +61,22 @@ export function statusLabel(status) {
   return { scheduled: 'Agendado', live: 'Ao vivo', finished: 'Encerrado' }[status] || status;
 }
 
-// Bandeiras de sub-divisões (Inglaterra/Escócia: 🏴 + tags) viram um quadrado
-// preto na maioria dos sistemas. Nesses casos mostramos uma sigla curta de 2
-// letras, renderizada pequena (.flag-abbr) para não destoar das outras.
+// Bandeiras — padrão do site é IMAGEM Twemoji local (emoji de bandeira não
+// renderiza no Windows). flagSrc converte o emoji do seed no caminho do asset:
+// /assets/flags/<codepoints hex minúsculos separados por hífen>.svg.
+// Funciona também para Inglaterra/Escócia (🏴 + tag sequence) — o Twemoji tem
+// esses assets. fe0f (variation selector) é omitido nos nomes do Twemoji.
+export function flagSrc(team) {
+  const flag = (team && team.flag) || '';
+  if (!flag) return '';
+  const codes = [...flag]
+    .map((ch) => ch.codePointAt(0).toString(16))
+    .filter((code) => code !== 'fe0f');
+  return `/assets/flags/${codes.join('-')}.svg`;
+}
+
+// Fallback textual (ex.: asset ausente, falha de rede): sigla curta de 2
+// letras (.flag-abbr) para sub-divisões 🏴 (ENG/SCO) ou emoji puro nos demais.
 const SUBDIV_ABBR = { ENG: 'IN', SCO: 'SC', WAL: 'GA', NIR: 'IN' };
 
 export function flagIsAbbr(team) {

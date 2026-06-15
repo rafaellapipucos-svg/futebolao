@@ -34,6 +34,19 @@
   --glow-violet: rgba(157, 123, 255, 0.07);
   --tab-active-glow: rgba(0, 232, 143, 0.6);
 
+  /* Bandeiras Twemoji (Agente 1) — tamanho fixo por contexto, nunca font-size.
+     Iguais nos dois temas (dimensão, não cor). */
+  --flag-sm: 18px;   /* tabelas e listas densas (standings, bracket, bettors) */
+  --flag-md: 24px;   /* padrão: match-card, live-head, mybets */
+  --flag-lg: 32px;   /* destaque */
+
+  /* Semânticos (alias — Agente 2; claro e escuro herdam automaticamente
+     porque referenciam tokens redefinidos por tema) */
+  --success: var(--green);  /* acerto de resultado, confirmações, vaga */
+  --accent: var(--cyan);    /* turquesa: destaque informativo (letra do grupo, links, fase) */
+  --live: var(--red);       /* tudo "ao vivo": dot pulsante, parciais */
+  --exact: var(--gold);     /* cravada/placar exato, 1º lugar, final */
+
   /* ---------- Paleta CLARA (padrão) ---------- */
   --bg-0: #e9eef6;
   --bg-1: #f3f6fb;
@@ -65,6 +78,10 @@
   --shadow-1: 0 6px 24px rgba(17, 25, 45, 0.10);
   --shadow-glow-green: 0 0 20px rgba(0, 168, 101, 0.16);
   --shadow-glow-gold: 0 0 28px rgba(192, 132, 22, 0.18);
+
+  /* Card sólido (Agente 2) — branco puro sobre o fundo cinza-claro */
+  --card-bg: #ffffff;
+  --shadow-card: 0 1px 3px rgba(17, 25, 45, 0.07), 0 8px 24px rgba(17, 25, 45, 0.08);
 
   --hover: rgba(17, 25, 45, 0.06);
   --input-bg: #ffffff;
@@ -108,6 +125,10 @@
   --shadow-1: 0 4px 24px rgba(0, 0, 0, 0.45);
   --shadow-glow-green: 0 0 24px rgba(0, 232, 143, 0.18);
   --shadow-glow-gold: 0 0 32px rgba(255, 194, 75, 0.22);
+
+  /* Card sólido (Agente 2) — superfície sólida escura (= surface-solid) */
+  --card-bg: #0d1830;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
 
   --hover: rgba(255, 255, 255, 0.13);
   --input-bg: rgba(0, 0, 0, 0.3);

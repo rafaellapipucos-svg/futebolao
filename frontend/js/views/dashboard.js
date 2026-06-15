@@ -16,15 +16,23 @@ function clinchBadge(row) {
 }
 
 function standingRow(row) {
-  const tr = h('tr', { class: row.live ? 'row-live' : '' });
+  // 1º–2º = vaga direta (verde) · 3º = repescagem (dourado) · live por cima
+  const zone = row.position <= 2 ? 'row-q' : row.position === 3 ? 'row-t' : '';
+  const tr = h('tr', { class: `${zone}${row.live ? ' row-live' : ''}`.trim() });
   const name = h('td', { class: 'tname' },
-    h('span', {
-      class: `pos-badge ${row.position <= 2 ? 'q' : row.position === 3 ? 't' : ''}`,
-    }, String(row.position)),
-    h('span', { class: 'team-flag', style: 'font-size:1.1rem' }, flagContent(row.team)),
-    h('span', { title: row.tie_unresolved ? 'Empate técnico — critérios FIFA esgotados' : '' },
-      row.team.name, row.tie_unresolved ? '*' : ''),
-    clinchBadge(row),
+    h('span', { class: 'tname-wrap' },
+      h('span', {
+        class: `pos-badge ${row.position <= 2 ? 'q' : row.position === 3 ? 't' : ''}`,
+      }, String(row.position)),
+      h('span', { class: 'team-flag flag-sm' }, flagContent(row.team)),
+      h('span', {
+        class: 'nm',
+        title: row.tie_unresolved
+          ? `${row.team.name} — empate técnico, critérios FIFA esgotados`
+          : row.team.name,
+      }, row.team.name, row.tie_unresolved ? '*' : ''),
+      clinchBadge(row),
+    ),
   );
   tr.append(
     name,
@@ -78,9 +86,9 @@ export function renderDashboard(store) {
     ),
     content,
     h('div', { class: 'legend' },
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--green)' }), '1º–2º: vaga direta'),
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--gold)' }), '3º: concorre entre os 8 melhores'),
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--red)' }), 'linha pulsando: placar parcial'),
+      h('span', {}, h('span', { class: 'dot', style: 'background:var(--success)' }), '1º–2º: vaga direta'),
+      h('span', {}, h('span', { class: 'dot', style: 'background:var(--exact)' }), '3º: concorre entre os 8 melhores'),
+      h('span', {}, h('span', { class: 'dot', style: 'background:var(--live)' }), 'linha pulsando: placar parcial'),
       h('span', {}, '✓ vaga garantida · * empate técnico'),
     ),
   );

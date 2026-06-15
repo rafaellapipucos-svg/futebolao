@@ -11,19 +11,36 @@ const PHASES = [
 
 let selectedStage = 'R32';
 
+// Pura/testável: rótulo curto "DD/MM HH:MM" para a tag do confronto. fmtTime
+// cuida do fuso/formato da hora; aqui só montamos a data.
+export function fmtMatchDate(iso) {
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return '';
+  const dd = String(dt.getDate()).padStart(2, '0');
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm} ${fmtTime(iso)}`;
+}
+
+// Lado do confronto: bandeira (ou placeholder circular se indefinido) + nome
+// truncado com title + placar. Bandeira dimensionada por classe (--flag-sm),
+// nunca por font-size inline.
 function sideRow(side, score, isWinner, isLoser) {
   const cls = `bracket-team${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
   if (!side.team) {
     return h('div', { class: cls },
-      h('span', { class: 't' }, h('span', { class: 'lbl' }, side.label)),
+      h('span', { class: 't' },
+        h('span', { class: 'flag-placeholder flag-sm', 'aria-hidden': 'true' }),
+        h('span', { class: 'nm tbd', title: side.label }, side.label),
+      ),
       h('span', { class: 'sc' }, ''),
     );
   }
   return h('div', { class: cls },
     h('span', { class: 't' },
-      h('span', { class: 'team-flag', style: 'font-size:1.05rem' }, flagContent(side.team)),
-      h('span', { class: 'nm' }, side.team.name),
-      isWinner ? '✓' : ''),
+      h('span', { class: 'team-flag flag-sm' }, flagContent(side.team)),
+      h('span', { class: 'nm', title: side.team.name }, side.team.name),
+      isWinner ? h('span', { class: 'win-check', 'aria-label': 'classificado' }, '✓') : null,
+    ),
     h('span', { class: 'sc' }, score == null ? '' : String(score)),
   );
 }
@@ -34,28 +51,38 @@ function matchBox(m) {
   const awayWin = winId != null && m.away.team && m.away.team.id === winId;
   const extra = m.stage === 'FINAL' ? ' bracket-final'
     : m.stage === 'THIRD' ? ' bracket-third' : '';
-  const dt = new Date(m.kickoff_utc);
-  const dateLabel = `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')} ${fmtTime(m.kickoff_utc)}`;
+  const isLive = m.status === 'live';
+  const tag = m.stage === 'FINAL' ? '🏆 Grande Final'
+    : m.stage === 'THIRD' ? '🥉 3º lugar' : `J${m.id}`;
   return h('div', { class: `glass bracket-match${extra}` },
-    h('span', { class: 'mnum' },
-      m.stage === 'FINAL' ? '🏆 GRANDE FINAL' : m.stage === 'THIRD' ? '🥉 3º lugar' : `J${m.id}`,
-      ' · ', dateLabel,
-      m.status === 'live' ? ' · AO VIVO' : ''),
-    sideRow(m.home, m.home_score, homeWin, awayWin),
-    sideRow(m.away, m.away_score, awayWin, homeWin),
+    h('div', { class: 'bracket-head' },
+      h('span', { class: 'mnum' }, tag),
+      h('span', { class: 'mdate tnum' }, fmtMatchDate(m.kickoff_utc)),
+      isLive ? h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }), 'AO VIVO') : null,
+    ),
+    h('div', { class: 'bracket-versus' },
+      sideRow(m.home, m.home_score, homeWin, awayWin),
+      h('span', { class: 'bracket-vs', 'aria-hidden': 'true' }, '×'),
+      sideRow(m.away, m.away_score, awayWin, homeWin),
+    ),
   );
 }
 
 function phaseBar(store, counts) {
-  return h('div', { class: 'filterbar' },
-    PHASES.map(([stage, label]) => h('button', {
-      class: `chip ${selectedStage === stage ? 'active' : ''}`,
-      type: 'button',
-      onClick: () => { selectedStage = stage; store.set({}); },
-    },
-      label,
-      counts[stage] ? h('span', { class: 'count-badge' }, String(counts[stage])) : null,
-    )),
+  return h('div', { class: 'filterbar', role: 'tablist', 'aria-label': 'Fase do mata-mata' },
+    PHASES.map(([stage, label]) => {
+      const active = selectedStage === stage;
+      return h('button', {
+        class: `chip ${active ? 'active' : ''}`,
+        type: 'button',
+        role: 'tab',
+        'aria-selected': active ? 'true' : 'false',
+        onClick: () => { selectedStage = stage; store.set({}); },
+      },
+        label,
+        counts[stage] ? h('span', { class: 'count-badge tnum' }, String(counts[stage])) : null,
+      );
+    }),
   );
 }
 

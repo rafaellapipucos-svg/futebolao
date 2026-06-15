@@ -19,109 +19,54 @@
   border: 1px solid var(--red-border); border-radius: var(--r-md);
   padding: 10px 14px; font-size: var(--fs-sm); font-weight: 600; }
 
-/* ---- Dashboard (tabela ao vivo) ---- */
+/* ---- Dashboard (tabela ao vivo) — Agente 2 ---- */
 .groups-grid { display: grid; gap: var(--sp-4);
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
 .group-card { padding: var(--sp-4); overflow-x: auto; } /* 9 colunas em 360px (R2-F5) */
-.group-card h3 { font-size: var(--fs-md); margin-bottom: var(--sp-3);
-  display: flex; align-items: center; justify-content: space-between; }
-.group-letter { color: var(--cyan); font-weight: 800; }
+.group-card h3 { font-size: var(--fs-lg); font-weight: 800; color: var(--text-0);
+  margin-bottom: var(--sp-3);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.group-letter { color: var(--accent); font-weight: 800; }
 .standings-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .standings-table th { color: var(--text-2); font-size: var(--fs-xs);
   font-weight: 700; text-align: center; padding: 4px 3px;
   border-bottom: 1px solid var(--border); }
 .standings-table th.tname { text-align: left; }
 .standings-table td { padding: 7px 3px; text-align: center;
-  font-family: var(--mono); font-weight: 600; border-bottom: 1px solid var(--border); }
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600;
+  border-bottom: 1px solid var(--border); }
+/* colunas numéricas: mesma largura em th/td, números sob seus cabeçalhos */
+.standings-table th:not(.tname), .standings-table td:not(.tname) {
+  width: 27px; min-width: 24px; }
 .standings-table tr:last-child td { border-bottom: none; }
-.standings-table td.tname { font-family: var(--font); text-align: left;
-  display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.standings-table td.tname { font-family: var(--font); text-align: left; width: auto; }
+.tname-wrap { display: flex; align-items: center; gap: 8px;
+  font-weight: 700; min-width: 0; }
+.tname-wrap .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .standings-table .pts { color: var(--text-0); font-weight: 800; }
 .pos-badge { width: 22px; height: 22px; border-radius: 7px; display: inline-grid;
   place-items: center; font-size: var(--fs-xs); font-weight: 800;
   background: var(--surface-2); color: var(--text-1); flex: none; }
 .pos-badge.q { background: var(--green-soft); color: var(--green); }
 .pos-badge.t { background: var(--gold-soft); color: var(--gold); }
+/* Classificados: 1º–2º vaga direta (verde), 3º repescagem (dourado) — bem sutil */
+tr.row-q td { background: var(--green-soft); }
+tr.row-q td { background: color-mix(in srgb, var(--green-soft) 45%, transparent); }
+tr.row-t td { background: var(--gold-soft); }
+tr.row-t td { background: color-mix(in srgb, var(--gold-soft) 45%, transparent); }
 tr.row-live td { background: var(--red-faint); }
-tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+tr.row-live .pts { color: var(--live); animation: pulse 1.6s ease-in-out infinite; }
 .legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4);
   color: var(--text-2); font-size: var(--fs-xs); }
 .legend .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block;
   margin-right: 5px; }
+@media (min-width: 880px) { .group-card { padding: var(--sp-5); } }
 
-/* ---- Bracket ---- */
-.bracket-scroll { overflow-x: auto; padding-bottom: var(--sp-4); }
-.bracket-cols { display: grid; grid-auto-flow: column; gap: var(--sp-5);
-  min-width: max-content; align-items: stretch; }
-.bracket-col { display: grid; align-content: space-around; gap: var(--sp-3);
-  min-width: 230px; }
-.bracket-col > h4 { text-align: center; color: var(--text-2); font-size: var(--fs-xs);
-  text-transform: uppercase; letter-spacing: 0.08em; position: sticky; top: 0; }
-.bracket-match { padding: 10px 12px; display: grid; gap: 6px; position: relative;
-  border-radius: var(--r-md); }
-.bracket-match .mnum { position: absolute; top: -8px; left: 10px;
-  font-size: 0.6rem; color: var(--text-2); background: var(--bg-1);
-  padding: 1px 6px; border-radius: var(--r-full); border: 1px solid var(--border); }
-.bracket-team { display: flex; align-items: center; gap: 8px; justify-content: space-between;
-  font-size: var(--fs-sm); font-weight: 600; min-height: 24px; }
-.bracket-team .t { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.bracket-team .t span.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 130px; }
-.bracket-team .sc { font-family: var(--mono); font-weight: 800; }
-.bracket-team.winner { color: var(--green); }
-.bracket-team.loser { opacity: 0.55; }
-.bracket-team .lbl { color: var(--text-2); font-size: var(--fs-xs);
-  border: 1px dashed var(--border-strong); padding: 2px 7px; border-radius: 6px; }
-.bracket-final { border: 1px solid var(--gold-border);
-  box-shadow: var(--shadow-glow-gold); }
-.bracket-third { opacity: 0.85; }
-.bracket-list { display: grid; gap: var(--sp-3); align-items: start;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-.count-badge { margin-left: 6px; font-size: 0.65rem; padding: 0 6px;
-  background: var(--surface-2); border-radius: var(--r-full); color: var(--text-2); }
+/* ---- Bracket: estilos canônicos na seção "Mata-mata (Agente 5)" no fim ---- */
 
-/* ---- Ranking ---- */
-.podium { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3);
-  margin-bottom: var(--sp-5); align-items: end; }
-.podium-slot { padding: var(--sp-4); text-align: center; display: grid;
-  justify-items: center; gap: 8px; }
-.podium-slot .avatar { box-shadow: var(--shadow-glow-green); }
-.podium-slot.first { order: 2; padding-bottom: var(--sp-6);
-  border-color: var(--gold-border); box-shadow: var(--shadow-glow-gold); }
-.podium-slot.second { order: 1; }
-.podium-slot.third { order: 3; }
-.podium-pts { font-family: var(--mono); font-weight: 800; font-size: var(--fs-xl); }
-.podium-name { font-weight: 700; font-size: var(--fs-sm); max-width: 100%;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.medal { font-size: 1.3rem; }
-.lb-table { width: 100%; border-collapse: collapse; }
-.lb-table td, .lb-table th { padding: 11px 8px; border-bottom: 1px solid var(--border);
-  font-size: var(--fs-sm); text-align: center; }
-.lb-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700; }
-.lb-table td.player, .lb-table th.player { text-align: left; }
-.lb-table td.player { display: flex; align-items: center; gap: 10px; font-weight: 700; }
-.lb-table .pts { font-family: var(--mono); font-weight: 800; }
-.lb-table tr.me td { background: var(--green-soft); }
-.lb-table tr.me td:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
-.lb-table tr.me td:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.live-delta { color: var(--red); font-size: var(--fs-xs); font-weight: 800;
-  animation: pulse 1.6s infinite; }
+/* ---- Ranking (Agente 6): seção consolidada em css/views-extra.css ---- */
 
-/* Como jogar */
-.rules-table { width: 100%; border-collapse: collapse; margin-top: var(--sp-3); }
-.rules-table td, .rules-table th { border: 1px solid var(--border); padding: 8px 10px;
-  font-size: var(--fs-sm); text-align: center; }
-.rules-table th { background: var(--surface-2); }
-.rules-list { display: grid; gap: var(--sp-3); margin: var(--sp-3) 0; }
-.rules-list li { margin-left: var(--sp-4); }
-
-/* ---- Minhas apostas ---- */
-.mybets-summary { display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-3); margin-bottom: var(--sp-5); }
-.stat-card { padding: var(--sp-4); text-align: center; display: grid; gap: 4px; }
-.stat-card .val { font-family: var(--mono); font-size: var(--fs-2xl); font-weight: 800; }
-.stat-card .lbl { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.05em; }
+/* ---- Minhas apostas: seção do Agente 7 em css/views-extra.css ---- */
 
 /* ---- Perfil ---- */
 .profile-grid { display: grid; gap: var(--sp-4); max-width: 560px; }
@@ -151,8 +96,6 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
 }
 @media (max-width: 879px) {
   .page-head h1 { font-size: var(--fs-xl); }
-  .mybets-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .stat-card .val { font-size: var(--fs-xl); }
 }
 
 /* ---- Perfil: histórico de palpites ---- */
@@ -175,25 +118,80 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
 .dot-green { background: var(--green); }
 .dot-red { background: var(--red); }
 
-/* ---- Ao Vivo ---- */
-.live-card { padding: var(--sp-4); display: grid; gap: var(--sp-3); }
-.live-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+/* === Ao Vivo (Agente 4) === */
+.live-grid { display: grid; gap: var(--sp-4); }
+.live-card { padding: var(--sp-4); display: grid; gap: var(--sp-4); }
+
+/* Bloco de placar coeso: nomes+bandeiras encostam no placar central.
+   Colunas laterais limitadas (minmax 0..max-content) para o "0 × 0" ficar
+   centrado e os times próximos dele, em vez de soltos nas pontas. */
+.live-head { display: grid; align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: var(--sp-3); }
-.live-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.live-team.right { justify-content: flex-end; }
-.live-score { display: grid; justify-items: center; gap: 4px;
-  font-size: var(--fs-xl); font-family: var(--mono); }
-.live-bettors { display: grid; gap: 6px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.live-bettor { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-  border-radius: var(--r-md); border: 1px solid var(--border); background: var(--surface);
-  cursor: pointer; text-align: left; color: inherit;
-  transition: background .15s, border-color .15s; }
-.live-bettor:hover { background: var(--hover); border-color: var(--border-strong); }
-.live-bettor-name { font-weight: 600; font-size: var(--fs-sm); flex: 1;
+.live-team { display: flex; align-items: center; gap: var(--sp-2); min-width: 0;
+  justify-content: flex-end; }              /* casa: encosta no placar (à direita) */
+.live-team.right { justify-content: flex-start; } /* visitante: encosta à esquerda */
+.live-team-name { font-weight: 700; font-size: var(--fs-md); color: var(--text-0);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-bettor-pts { font-family: var(--mono); font-weight: 800; color: var(--text-2);
+.live-team .team-flag { display: inline-flex; flex: none; }
+.live-team .flag-placeholder { width: var(--flag-md); height: var(--flag-md);
+  flex: none; border-radius: 50%; background: var(--surface-2);
+  border: 1px solid var(--border); }
+.live-score { display: grid; justify-items: center; gap: var(--sp-2); flex: none; }
+.live-score b { font-size: var(--fs-xl); font-family: var(--mono); font-weight: 800;
+  color: var(--text-0); line-height: 1; }
+
+/* Grid de palpites (4 colunas em telas largas) */
+.live-bettors { display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.live-empty-bettors { grid-column: 1 / -1; padding: var(--sp-2) 0; }
+
+/* Card de bettor: branco sólido (--card-bg) destacando-se do card-pai cinza.
+   Sombra leve só no hover (token, theme-safe); em repouso a borda já separa. */
+.live-bettor { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md); border: 1px solid var(--border);
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-0) 7%, transparent);
+  cursor: pointer; text-align: left; color: inherit; width: 100%;
+  transition: transform .15s var(--ease), border-color .15s, box-shadow .15s; }
+.live-bettor:hover { transform: translateY(-1px);
+  border-color: var(--border-strong); box-shadow: var(--shadow-card); }
+
+/* Identidade (avatar + nome) — nome centrado no eixo do avatar */
+.live-bettor-id { display: flex; align-items: center; gap: var(--sp-2);
+  min-width: 0; flex: 1; }
+.live-bettor-id .avatar { flex: none; }
+.live-bettor-name { font-weight: 600; font-size: var(--fs-sm); color: var(--text-0);
+  line-height: 1.2; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Palpite (NEUTRO) separado da pontuação */
+.live-bettor-meta { display: flex; align-items: center; gap: var(--sp-2);
   flex: none; }
+.live-guess { font-size: var(--fs-xs); font-weight: 700; color: var(--text-1);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-full); padding: 2px 9px; white-space: nowrap; }
+
+/* Pontuação: discreta para quem zerou, destacada (verde, negrito) p/ quem pontua */
+.live-bettor-pts { font-family: var(--mono); font-weight: 700; font-size: var(--fs-sm);
+  color: var(--text-2); flex: none; min-width: 38px; text-align: right; }
+.live-bettor-pts.scoring { color: var(--success); font-weight: 800; }
+
+/* Estado de sucesso: quem está pontuando ganha borda semântica (resultado=verde,
+   cravada=ouro), não só fundo levemente colorido. O anel (box-shadow inset-like)
+   reforça a borda e persiste no hover (apenas eleva). */
+.live-bettor.is-scoring { border-color: var(--success);
+  box-shadow: 0 0 0 1px var(--success); }
+.live-bettor.is-scoring:hover { border-color: var(--success);
+  box-shadow: 0 0 0 1px var(--success), var(--shadow-card); }
+.live-bettor.is-scoring .avatar { box-shadow: 0 0 0 2px var(--success); }
+.live-bettor.is-exact { border-color: var(--gold-border);
+  box-shadow: 0 0 0 1px var(--exact); }
+.live-bettor.is-exact:hover { border-color: var(--gold-border);
+  box-shadow: 0 0 0 1px var(--exact), var(--shadow-card); }
+.live-bettor.is-exact .avatar { box-shadow: 0 0 0 2px var(--exact); }
+.live-bettor.is-exact .live-bettor-pts.scoring { color: var(--exact); }
 
 /* ---- Perfil público (modal) ---- */
 .pubprof-head { display: flex; align-items: center; gap: 14px; }
@@ -209,41 +207,20 @@ tr.row-live .pts { color: var(--red); animation: pulse 1.6s ease-in-out infinite
   50% { box-shadow: 0 0 22px 1px var(--gold-border); }
 }
 
-/* Cards interativos: leve elevação no hover */
-.match-card, .live-card, .bracket-match {
+/* Cards interativos: leve elevação no hover (bracket-match: ver seção Mata-mata) */
+.match-card, .live-card {
   transition: transform .18s var(--ease), box-shadow .18s, border-color .18s;
 }
-.match-card:hover, .live-card:hover, .bracket-match:hover {
+.match-card:hover, .live-card:hover {
   transform: translateY(-2px); box-shadow: var(--shadow-1);
   border-color: var(--border-strong);
 }
 
-/* Filtros / fases: brilho no ativo */
-.filterbar .chip { transition: background .2s, box-shadow .2s, transform .12s; }
-.filterbar .chip.active { box-shadow: var(--shadow-glow-green); }
-.filterbar .chip:not(.active):hover { background: var(--hover); transform: translateY(-1px); }
+/* Filterbar: spec canônica em components.css (seção Filterbar — Agente 5). */
 
-/* ----- Ranking ----- */
-.podium-slot { transition: transform .2s var(--ease), box-shadow .2s; }
-.podium-slot:hover { transform: translateY(-4px); }
-.podium-slot.first {
-  background: linear-gradient(180deg, var(--gold-soft), transparent 72%);
-  animation: glowPulse 3.4s ease-in-out infinite;
-}
-.podium-slot.first .avatar { box-shadow: var(--shadow-glow-gold);
-  animation: floatY 3s ease-in-out infinite; }
-.podium-slot .medal { font-size: 1.5rem; filter: drop-shadow(0 2px 6px var(--overlay)); }
-.podium-slot.first .medal { font-size: 1.95rem; }
-.lb-table tbody tr { transition: background .15s; }
-.lb-table tbody tr:hover td { background: var(--hover); }
-.lb-table tbody tr:nth-child(1) td:first-child { color: var(--gold); font-weight: 800; }
-.lb-table tbody tr:nth-child(2) td:first-child { color: var(--text-1); font-weight: 800; }
-.lb-table tbody tr:nth-child(3) td:first-child { color: var(--cyan); font-weight: 800; }
+/* ----- Ranking: seção consolidada em css/views-extra.css (Agente 6) ----- */
 
-/* ----- Mata-mata ----- */
-.bracket-team.winner { font-weight: 800; }
-.bracket-match.bracket-final { animation: glowPulse 3.6s ease-in-out infinite; }
-.bracket-list .bracket-match { animation: fadeUp .3s var(--ease) both; }
+/* ----- Mata-mata: ver seção "Mata-mata (Agente 5)" abaixo ----- */
 
 /* Botões: micro-interação */
 .btn:active { transform: translateY(0) scale(.98); }

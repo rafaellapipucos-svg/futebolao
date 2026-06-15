@@ -2,7 +2,7 @@
 import { renderBetBox } from '../betbox.js';
 import { ensureData } from '../data.js';
 import { fmtTime, groupByDay, minuteLabel } from '../format.js';
-import { emptyState, flagContent, h, skeletonList } from '../ui.js';
+import { emptyState, flagContent, h, icon, skeletonList } from '../ui.js';
 
 const STAGE_FILTERS = [
   ['ALL', 'Todos'], ['GROUP', 'Grupos'], ['R32', '16 avos'], ['R16', 'Oitavas'],
@@ -10,6 +10,7 @@ const STAGE_FILTERS = [
 ];
 
 let activeFilter = 'ALL';
+let searchQuery = '';
 let ticker = null;
 
 function ensureTicker(store) {
@@ -20,26 +21,36 @@ function ensureTicker(store) {
   }, 30000);
 }
 
+// Busca acento-insensível ("Japao" encontra "Japão"): remove marcas diacríticas.
+const norm = (s) => String(s).normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+
+function matchesQuery(match, q) {
+  if (!q) return true;
+  return [match.home, match.away].some(
+    (side) => side.team && norm(side.team.name).includes(q));
+}
+
 function teamSide(side, right = false) {
   if (side.team) {
     return h('div', { class: `team-side${right ? ' right' : ''}` },
       h('span', { class: 'team-flag' }, flagContent(side.team)),
-      h('span', { class: 'team-name' }, side.team.name),
+      h('span', { class: 'team-name', title: side.team.name }, side.team.name),
     );
   }
   return h('div', { class: `team-side${right ? ' right' : ''}` },
+    h('span', { class: 'flag-placeholder', 'aria-hidden': 'true' }),
     h('span', { class: 'team-tbd' }, side.label));
 }
 
 function scoreBox(match) {
   if (match.status === 'scheduled') {
     return h('div', { class: 'score-box' },
-      h('span', { class: 'kick-time' }, fmtTime(match.kickoff_utc)),
+      h('span', { class: 'kick-time tnum' }, fmtTime(match.kickoff_utc)),
       h('span', { class: 'muted small' }, 'horário local'),
     );
   }
   return h('div', { class: 'score-box' },
-    h('div', { class: 'score-line' },
+    h('div', { class: 'score-line tnum' },
       h('span', {}, String(match.home_score ?? '–')),
       h('span', { class: 'score-x' }, 'x'),
       h('span', {}, String(match.away_score ?? '–')),
@@ -52,14 +63,17 @@ function scoreBox(match) {
 }
 
 export function matchCard(store, match) {
+  // Chip único de contexto: "Fase · Grupo X · J12" (em vez de 3 chips soltos).
+  const context = [
+    match.stage_label,
+    match.group ? `Grupo ${match.group}` : null,
+    `J${match.id}`,
+  ].filter(Boolean).join(' · ');
   return h('div', { class: 'glass match-card' },
     h('div', { class: 'match-meta' },
-      h('div', { class: 'row', style: 'gap:6px;flex-wrap:wrap' },
-        h('span', { class: 'chip chip-cyan' }, match.stage_label),
-        match.group ? h('span', { class: 'chip' }, `Grupo ${match.group}`) : null,
-        h('span', { class: 'chip' }, `J${match.id}`),
-      ),
-      h('span', { class: 'venue' }, match.venue),
+      h('span', { class: 'chip chip-cyan' }, context),
+      h('span', { class: 'venue', title: match.venue },
+        icon('stadium', 12), match.venue),
     ),
     h('div', { class: 'match-grid' },
       teamSide(match.home),
@@ -80,9 +94,29 @@ function filterBar(store) {
   );
 }
 
+function searchBox(store) {
+  const input = h('input', {
+    id: 'match-search', class: 'input', type: 'search', autocomplete: 'off',
+    placeholder: 'Buscar time…', value: searchQuery,
+    'aria-label': 'Buscar jogos por nome de time',
+  });
+  input.addEventListener('input', () => {
+    const pos = input.selectionStart;
+    searchQuery = input.value;
+    store.set({}); // re-render troca o input: restaura foco e cursor
+    const el = document.getElementById('match-search');
+    if (el) {
+      el.focus();
+      try { el.setSelectionRange(pos, pos); } catch { /* navegador sem suporte */ }
+    }
+  });
+  return h('div', { class: 'match-search' }, icon('search', 16), input);
+}
+
 export function renderMatches(store) {
   ensureTicker(store);
   const data = ensureData(store, 'matches');
+  const q = norm(searchQuery.trim());
   let content;
   if (data === null) {
     content = skeletonList(5, 170);
@@ -90,11 +124,14 @@ export function renderMatches(store) {
     content = emptyState('bolt', 'Não consegui carregar os jogos.', data.error);
   } else {
     const filtered = data.matches.filter(
-      (m) => activeFilter === 'ALL' || m.stage === activeFilter,
+      (m) => (activeFilter === 'ALL' || m.stage === activeFilter) && matchesQuery(m, q),
     );
     if (filtered.length === 0) {
-      content = emptyState('ball', 'Nenhum jogo nesta fase ainda.',
-        'Os confrontos aparecem assim que ficarem definidos.');
+      content = q
+        ? emptyState('search', `Nenhum jogo encontrado para “${searchQuery.trim()}”.`,
+          'Tente outro nome de time ou limpe a busca.')
+        : emptyState('ball', 'Nenhum jogo nesta fase ainda.',
+          'Os confrontos aparecem assim que ficarem definidos.');
     } else {
       content = groupByDay(filtered).map((day) => [
         h('div', { class: 'day-sep' }, day.label),
@@ -106,9 +143,11 @@ export function renderMatches(store) {
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' },
       h('div', {},
-        h('h1', {}, 'Jogos & ', h('span', { class: 'grad-text' }, 'Apostas')),
+        h('h1', { class: 'h1-ico' }, icon('ball', 26),
+          h('span', {}, 'Jogos & ', h('span', { class: 'grad-text' }, 'Apostas'))),
         h('p', { class: 'sub' }, 'Aposte no placar exato até o apito inicial de cada partida.'),
       ),
+      searchBox(store),
     ),
     filterBar(store),
     content,

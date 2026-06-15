@@ -1,0 +1,231 @@
+/* ============ VIEWS EXTRA — overflow de views.css (limite de 300 LOC) ============
+   Criado pelo Agente 5 (Mata-mata) porque views.css chegou perto do teto.
+   Demais agentes que precisarem de espaço podem ANEXAR sua própria seção
+   comentada aqui (mesma regra de propriedade do views.css). */
+
+/* === Mata-mata (Agente 5) =============================================
+   Cards de confronto centrados, com elo visual "×" entre os dois times,
+   bandeira (ou placeholder circular para time indefinido), tag de data
+   legível e destaque de final/3º lugar. Lista responsiva (uma fase por
+   vez; o seletor de fase usa a Filterbar canônica de components.css).
+   Sem tracejado (§2), sem cor hardcoded, funciona nos dois temas. */
+
+.bracket-list {
+  display: grid; gap: var(--sp-4); align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.bracket-list .bracket-match { animation: fadeUp .3s var(--ease) both; }
+
+/* Card do confronto: padding de card (§2), conteúdo centrado, elevação no
+   hover consistente com match-card/live-card. */
+.bracket-match {
+  padding: var(--sp-4); display: grid; gap: var(--sp-3);
+  border-radius: var(--r-lg); text-align: center;
+  transition: transform .18s var(--ease), box-shadow .18s, border-color .18s;
+}
+.bracket-match:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-1);
+  border-color: var(--border-strong);
+}
+
+/* Cabeçalho do card: tag do jogo + data legível (--text-1, nunca cinza claro)
+   + chip ao vivo. Centralizado, com leve respiro. */
+.bracket-head {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 8px;
+}
+.bracket-head .mnum {
+  font-size: var(--fs-xs); font-weight: 800; letter-spacing: .03em;
+  color: var(--text-1); text-transform: uppercase;
+}
+.bracket-head .mdate {
+  font-size: var(--fs-xs); font-weight: 700; color: var(--text-1);
+  background: var(--surface-2); border-radius: var(--r-full);
+  padding: 2px 9px; white-space: nowrap;
+}
+.bracket-head .chip-live { padding: 2px 9px; }
+
+/* Bloco do duelo: duas linhas de time + conector "×" central. O conector dá
+   o "elo visual" entre os dois blocos pedido no feedback. */
+.bracket-versus { display: grid; gap: 6px; justify-items: stretch; }
+.bracket-vs {
+  justify-self: center; color: var(--text-2);
+  font-size: var(--fs-md); font-weight: 800; line-height: 1;
+  padding: 1px 0;
+}
+
+/* Linha de time: bandeira/placeholder + nome (truncado, com title) à esquerda,
+   placar à direita. Largura controlada para o conteúdo ficar centrado no card. */
+.bracket-team {
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  font-size: var(--fs-sm); font-weight: 700; min-height: 30px;
+  padding: 5px 10px; border-radius: var(--r-md);
+  background: var(--surface-2); border: 1px solid var(--border);
+  width: min(100%, 240px); margin: 0 auto;
+}
+.bracket-team .t { display: flex; align-items: center; gap: 8px; min-width: 0; text-align: left; }
+.bracket-team .t .nm {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+/* Placeholder de time indefinido ("1º do Grupo A"): nome em peso menor, neutro.
+   Borda SÓLIDA (§2 — nada de tracejado). */
+.bracket-team .nm.tbd { color: var(--text-1); font-weight: 600; }
+.bracket-team .sc {
+  font-family: var(--mono); font-weight: 800; flex: none;
+  font-variant-numeric: tabular-nums; min-width: 1.3ch; color: var(--text-0);
+}
+.bracket-team .win-check { color: var(--success); font-weight: 800; flex: none; }
+
+/* Estados de resultado: vencedor ganha borda/peso semântico; perdedor recua. */
+.bracket-team.winner {
+  border-color: var(--success); color: var(--text-0); font-weight: 800;
+  background: var(--green-soft);
+}
+.bracket-team.loser { opacity: .6; }
+
+/* Bandeira/placeholder na densidade --flag-sm (lista densa, §5). */
+.bracket-team .team-flag { display: inline-flex; flex: none; }
+.bracket-team .flag-placeholder {
+  width: var(--flag-sm); height: var(--flag-sm); flex: none;
+  border-radius: 50%; background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+/* Final e 3º lugar: realce dourado (final pulsa), conforme paleta de "exact". */
+.bracket-match.bracket-final {
+  border-color: var(--gold-border); box-shadow: var(--shadow-glow-gold);
+  animation: glowPulse 3.6s ease-in-out infinite;
+}
+.bracket-match.bracket-final .mnum { color: var(--exact); }
+.bracket-match.bracket-third .mnum { color: var(--exact); }
+
+/* === Ranking (Agente 6) ==============================================
+   Pódio (top 3) + tabela de classificação. Seção consolidada: substitui os
+   dois blocos antes espalhados em views.css (base + "fase G"). Paleta: ouro
+   (--exact) p/ 1º e medalhas; números em --text-0; turquesa reservada a info.
+   Sem cor hardcoded, funciona nos dois temas. Zebra striping permitido só
+   na .lb-table (§7). */
+
+/* --- Pódio --- */
+.podium {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3);
+  margin-bottom: var(--sp-5); align-items: stretch;
+}
+/* Slot: conteúdo centrado vertical e horizontalmente — elimina o vazio dos
+   laterais (2º/3º) frente ao 1º. O 1º fica mais alto (padding-bottom) p/
+   manter a hierarquia de pódio. */
+.podium-slot {
+  padding: var(--sp-4); text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; min-width: 0;
+  transition: transform .2s var(--ease), box-shadow .2s, border-color .2s;
+}
+.podium-slot.clickable:hover { transform: translateY(-4px); box-shadow: var(--shadow-1); }
+.podium-slot .avatar { box-shadow: var(--shadow-glow-green); flex: none; }
+.podium-empty { background: none; border: none; box-shadow: none; }
+
+.podium-slot.first { order: 2; padding-bottom: var(--sp-6);
+  border-color: var(--gold-border); box-shadow: var(--shadow-glow-gold);
+  background: linear-gradient(180deg, var(--gold-soft), transparent 72%);
+  animation: glowPulse 3.4s ease-in-out infinite; }
+.podium-slot.first .avatar { box-shadow: var(--shadow-glow-gold);
+  animation: floatY 3s ease-in-out infinite; }
+.podium-slot.second { order: 1; }
+.podium-slot.third { order: 3; }
+
+.podium-slot .medal { font-size: 1.5rem; line-height: 1; flex: none;
+  filter: drop-shadow(0 2px 6px var(--overlay)); }
+.podium-slot.first .medal { font-size: 1.95rem; }
+
+.podium-name { font-weight: 700; font-size: var(--fs-sm); color: var(--text-0);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Pontuação: número escuro + "pts" colado e discreto. 1º em ouro (--exact). */
+.podium-pts { display: inline-flex; align-items: baseline; gap: 4px;
+  font-family: var(--mono); color: var(--text-0); }
+.podium-pts b { font-size: var(--fs-xl); font-weight: 800; line-height: 1; }
+.podium-pts .unit { font-size: var(--fs-xs); font-weight: 700; color: var(--text-2);
+  font-family: var(--font); }
+.podium-slot.first .podium-pts b { color: var(--exact); }
+
+/* --- Tabela de classificação --- */
+.lb-card { padding: var(--sp-2) var(--sp-4); }
+.lb-table { width: 100%; border-collapse: collapse; }
+.lb-table td, .lb-table th { padding: 11px 8px; font-size: var(--fs-sm);
+  text-align: center; border-bottom: 1px solid var(--border); }
+.lb-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700; }
+.lb-table tbody tr:last-child td { border-bottom: none; }
+/* Nome à esquerda; numéricos centrados sob seus cabeçalhos (.tnum no JS). */
+.lb-table td.player, .lb-table th.player { text-align: left; }
+.lb-table td.player { display: flex; align-items: center; gap: 10px;
+  font-weight: 700; min-width: 0; }
+.lb-table td.player .avatar { flex: none; }
+.lb-table td.player .nm { overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; min-width: 0; }
+.lb-table .pts { color: var(--text-0); font-weight: 800; }
+
+/* Coluna de posição: medalha (ícone novo) + número, conectando pódio↔tabela. */
+.lb-table td.pos, .lb-table th.pos { width: 1%; white-space: nowrap; }
+.lb-table td.pos { display: flex; align-items: center; justify-content: center;
+  gap: 6px; }
+.pos-num { font-weight: 700; color: var(--text-1); }
+.pos-medal { display: inline-flex; flex: none; }
+.pos-medal.pos-gold { color: var(--exact); }
+.pos-medal.pos-silver { color: var(--text-2); }
+.pos-medal.pos-bronze { color: var(--gold); opacity: .72; }
+.lb-table tr:nth-child(-n+3) .pos-num { font-weight: 800; color: var(--text-0); }
+
+/* Empate: marcador "=" sutil ao lado do nome (desempate alfabético é regra). */
+.tie-tag { flex: none; font-size: var(--fs-xs); font-weight: 800;
+  color: var(--text-2); background: var(--surface-2);
+  border-radius: var(--r-full); width: 16px; height: 16px;
+  display: inline-grid; place-items: center; line-height: 1; }
+
+/* Zebra striping MUITO sutil (só .lb-table, §7) + hover + linha "você". */
+.lb-table tbody tr { transition: background .15s; }
+.lb-table tbody tr:nth-child(even) td { background: var(--surface); }
+.lb-table tbody tr:hover td { background: var(--hover); }
+/* "Você" vence zebra/hover (mesma especificidade, vem depois na ordem). */
+.lb-table tbody tr.me td { background: var(--green-soft); }
+.lb-table tbody tr.me:hover td { background: var(--green-soft); }
+.lb-table tbody tr.me td:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.lb-table tbody tr.me td:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.live-delta { color: var(--live); font-size: var(--fs-xs); font-weight: 800;
+  animation: pulse 1.6s infinite; }
+
+/* --- "Como Jogar" (modal) --- */
+.rules-table { width: 100%; border-collapse: collapse; margin-top: var(--sp-3); }
+.rules-table td, .rules-table th { border: 1px solid var(--border);
+  padding: 8px 10px; font-size: var(--fs-sm); text-align: center; }
+.rules-table th { background: var(--surface-2); font-weight: 700; }
+.rules-list { display: grid; gap: var(--sp-3); margin: var(--sp-3) 0; }
+.rules-list li { margin-left: var(--sp-4); }
+
+/* === Minhas apostas (Agente 7) =======================================
+   Lista de cards reusa o matchCard (Ag.3); aqui só o grid da lista, o layout
+   do EDITOR de aposta (campos + botão + countdown empilhados) e ajustes
+   responsivos da barra de status. A .status-bar / .bet-inputs / .countdown-bar
+   vivem em components.css (seção Agente 7). NÃO mexe no lockedView (Ag.3):
+   o override do .bet-area é escopado via :has(.bet-inputs), que casa só com
+   o editor (o rodapé encerrado não tem .bet-inputs). Tokens só; 2 temas. */
+
+.mybets-list { display: grid; gap: var(--sp-4); }
+
+/* Editor: empilha campos de gol, botão (largura total) e countdown, centrados.
+   :has(.bet-inputs) garante que isto NÃO afeta o rodapé de aposta encerrada. */
+.bet-area:has(.bet-inputs) {
+  flex-direction: column; align-items: stretch; gap: var(--sp-4);
+}
+.bet-area:has(.bet-inputs) .btn-block { margin-top: 2px; }
+
+/* Barra de status responsiva: aperta número, ícone e gaps p/ os 3 itens
+   caberem em ~360px. O rótulo NÃO encolhe abaixo de --fs-xs (regra de contraste
+   AA do §0): em telas muito estreitas zera o tracking e trunca com ellipsis. */
+@media (max-width: 879px) {
+  .status-val { font-size: var(--fs-lg); }
+  .status-ico { width: 34px; height: 34px; }
+  .status-item { gap: var(--sp-2); padding: var(--sp-2); }
+}
+@media (max-width: 360px) {
+  .status-lbl { letter-spacing: 0; }
+  .status-item { gap: 7px; padding: var(--sp-2) 4px; }
+}

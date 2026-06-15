@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { countdown, dayKey, groupByDay, minuteLabel, statusLabel, teamFlag, flagIsAbbr } from '../js/format.js';
+import { countdown, dayKey, groupByDay, minuteLabel, statusLabel, teamFlag, flagIsAbbr, flagSrc } from '../js/format.js';
 
 test('countdown formata dias/horas/minutos/segundos', () => {
   const base = Date.parse('2026-06-11T12:00:00Z');
@@ -41,14 +41,35 @@ test('minuteLabel e statusLabel', () => {
   assert.equal(statusLabel('finished'), 'Encerrado');
 });
 
-test('teamFlag: sigla curta p/ bandeira de sub-divisão (quadrado preto), emoji p/ resto', () => {
-  const eng = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
-  const sco = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
-  assert.equal(teamFlag({ flag: eng, code: 'ENG', name: 'Inglaterra' }), 'IN');
-  assert.equal(teamFlag({ flag: sco, code: 'SCO', name: 'Escócia' }), 'SC');
+const ENG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+const SCO = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+
+test('flagSrc: emoji → caminho do SVG Twemoji local (codepoints hex com hífen)', () => {
+  assert.equal(flagSrc({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA', name: 'Brasil' }),
+    '/assets/flags/1f1e7-1f1f7.svg');
+  assert.equal(flagSrc({ flag: '\u{1F1E6}\u{1F1F7}', code: 'ARG', name: 'Argentina' }),
+    '/assets/flags/1f1e6-1f1f7.svg');
+});
+
+test('flagSrc: Inglaterra e Escócia (tag sequences) têm asset Twemoji próprio', () => {
+  assert.equal(flagSrc({ flag: ENG, code: 'ENG', name: 'Inglaterra' }),
+    '/assets/flags/1f3f4-e0067-e0062-e0065-e006e-e0067-e007f.svg');
+  assert.equal(flagSrc({ flag: SCO, code: 'SCO', name: 'Escócia' }),
+    '/assets/flags/1f3f4-e0067-e0062-e0073-e0063-e0074-e007f.svg');
+});
+
+test('flagSrc: sem flag → caminho vazio (fallback fica com a sigla)', () => {
+  assert.equal(flagSrc({ flag: '', code: 'XYZ' }), '');
+  assert.equal(flagSrc(null), '');
+  assert.equal(flagSrc(undefined), '');
+});
+
+test('teamFlag/flagIsAbbr (fallback textual): sigla p/ sub-divisão, emoji p/ resto', () => {
+  assert.equal(teamFlag({ flag: ENG, code: 'ENG', name: 'Inglaterra' }), 'IN');
+  assert.equal(teamFlag({ flag: SCO, code: 'SCO', name: 'Escócia' }), 'SC');
   assert.equal(teamFlag({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA', name: 'Brasil' }), '\u{1F1E7}\u{1F1F7}');
   assert.equal(teamFlag({ flag: '', code: 'XYZ', name: 'X' }), 'XY');
   assert.equal(teamFlag(null), '');
-  assert.equal(flagIsAbbr({ flag: eng, code: 'ENG' }), true);
+  assert.equal(flagIsAbbr({ flag: ENG, code: 'ENG' }), true);
   assert.equal(flagIsAbbr({ flag: '\u{1F1E7}\u{1F1F7}', code: 'BRA' }), false);
 });

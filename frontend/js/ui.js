@@ -1,6 +1,6 @@
 // ui.js — h() para DOM seguro (textContent, nunca innerHTML com dados),
 // ícones SVG inline, toast, modal, avatar, skeleton.
-import { flagIsAbbr, teamFlag } from './format.js';
+import { flagSrc, teamFlag } from './format.js';
 
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);
@@ -47,6 +47,10 @@ const ICON_PATHS = {
   sun: 'M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-15a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm0 18a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm10-9a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zM4 12a1 1 0 0 1-1 1H2a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zm14.95-6.95a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.41l.7-.71a1 1 0 0 1 1.42 0zM7.17 16.83a1 1 0 0 1 0 1.41l-.71.71a1 1 0 0 1-1.41-1.41l.7-.71a1 1 0 0 1 1.42 0zm11.78 1.41a1 1 0 0 1-1.41 0l-.71-.71a1 1 0 0 1 1.41-1.41l.71.7a1 1 0 0 1 0 1.42zM6.46 6.46a1 1 0 0 1-1.41 0l-.71-.71a1 1 0 0 1 1.41-1.41l.71.7a1 1 0 0 1 0 1.42z',
   moon: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
   live: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6.34 6.34 4.93 4.93a10 10 0 0 0 0 14.14l1.41-1.41a8 8 0 0 1 0-11.32zm11.32 0a8 8 0 0 1 0 11.32l1.41 1.41a10 10 0 0 0 0-14.14z',
+  search: 'M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z',
+  stadium: 'M12 4a8 8 0 0 1 8 8v1h2v2H2v-2h2v-1a8 8 0 0 1 8-8zm0 2a6 6 0 0 0-6 6v1h12v-1a6 6 0 0 0-6-6z',
+  help: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 15.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM12 6a3.6 3.6 0 0 1 1.6 6.8c-.6.3-.8.5-.8 1V15h-1.6v-1.4c0-1 .5-1.6 1.4-2.1.7-.4 1-.7 1-1.5A1.6 1.6 0 0 0 10.4 8.5l-1.9-.4A3.6 3.6 0 0 1 12 6z',
+  medal: 'M8.5 2h7l-2.2 6.1a5.5 5.5 0 1 1-2.6 0zm3.5 8a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 1.6 .77 1.56 1.73.25-1.25 1.22.3 1.72L12 15.3l-1.55.81.3-1.72-1.25-1.22 1.73-.25z',
 };
 
 export function icon(name, size = 20) {
@@ -62,11 +66,19 @@ export function icon(name, size = 20) {
   return svg;
 }
 
-// flagContent — emoji (texto) ou sigla pequena (.flag-abbr) p/ ENG/SCO.
+// flagContent — imagem Twemoji local (emoji de bandeira não renderiza no
+// Windows). alt="" + aria-hidden: o nome do time está no texto adjacente.
+// Fallback onerror (asset ausente) → sigla .flag-abbr, como avatarEl faz.
 export function flagContent(team) {
-  return flagIsAbbr(team)
-    ? h('span', { class: 'flag-abbr' }, teamFlag(team))
-    : teamFlag(team);
+  const src = flagSrc(team);
+  const abbr = () => h('span', { class: 'flag-abbr' }, teamFlag(team));
+  if (!src) return abbr();
+  const img = h('img', {
+    class: 'team-flag-img', src, alt: '', 'aria-hidden': 'true',
+    width: 24, height: 24, loading: 'lazy', draggable: 'false',
+  });
+  img.addEventListener('error', () => img.replaceWith(abbr()));
+  return img;
 }
 
 export function toast(message, type = 'ok', ms = 3200) {

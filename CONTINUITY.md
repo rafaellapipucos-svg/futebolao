@@ -333,3 +333,49 @@ kickoff; perfil público com ranking+pontos. Fundações F0 PRONTAS:
   agora move o kickoff p/ o futuro (clock-independent).
 - Verde: core 160, node 24, node --check ok, contraste tokenizado.
 - min-instances: setting do Cloud Run (console), não do repo — usuário já pôs 1.
+
+## Rodada 13 — polish de UI (retomada do fable; agentes 4–7) (2026-06-15)
+Continuação da sessão "Eight design agents coordination" do fable, que travou no
+limite de uso após coordenar `frontend/DESIGN_SYSTEM.md` (Ag.0) + concluir Ag.1–3
+(bandeiras Twemoji incl. ENG/SCO; aba Tabela; aba Jogos). Fable 5 foi descontinuado
+(403 "use Opus 4.8"), então Opus retomou do ponto exato (Ag.4) e rodou Ag.4–7
+SEQUENCIALMENTE (pipeline do DESIGN_SYSTEM §8 — editam views.css/components.css
+compartilhados, não podem rodar em paralelo), com testes por agente. [USER pediu retomada; TOOL]
+- Ag.4 Ao Vivo [CODE]: live.js — bloco de placar coeso (grid 1fr/auto/1fr), dot
+  pulsante reforçado (.chip-live .dot em base.css), cards de bettor brancos
+  (--card-bg), palpite NEUTRO vs pontuação em destaque, ordenação por quem pontua
+  (sortBettors), truncamento+title (shortName), estados is-scoring/is-exact.
+  +tests/live.test.js (3). Seção "Ao Vivo (Agente 4)" em views.css.
+- Ag.5 Mata-mata [CODE]: bracket.js — card centrado com conector "×", placeholder
+  circular de bandeira (fim do tracejado), tag de data legível (--text-1), chip
+  ativo com --text-on-accent, H1 grad-text. Filterbar CANÔNICA criada em
+  components.css (consumida por Jogos/Mata-mata/Apostas). +tests/bracket.test.js
+  (3, fmtMatchDate). Removidos CSS órfãos (.bracket-cols/.count-badge global).
+- Ag.6 Ranking [CODE]: leaderboard.js — "Como Jogar" com ícone help (era emoji ❓
+  vermelho/baixo contraste), pódio truncado+title e pts em --text-0 (ouro só p/ 1º),
+  colunas alinhadas/tnum, zebra striping, medalha (ícone novo) no top-3, empates
+  (medalForPosition/tiedPositions). Ícones help+medal ADD em ui.js (ICON_PATHS, sem
+  remoções). +tests/leaderboard.test.js (4).
+- Ag.7 Apostas [CODE]: mybets.js — barra de status única (troféu/alvo/tique) no
+  lugar de 3 cartões; filtros na filterbar canônica c/ dot "ao vivo" + count-badge;
+  betbox.js — editor com 2 campos numéricos limpos (sem stepper) + "×", botão
+  full-width, countdown com barra de progresso (clampScore/kickoffProgress). lockedView
+  (Ag.3) PRESERVADO (override CSS escopado via :has(.bet-inputs)). +tests/betbox.test.js (5).
+- D018 ACTIVE: criado `frontend/css/views-extra.css` (overflow do views.css p/ caber
+  ≤300 LOC) + `<link>` após views.css no index.html. Seções Mata-mata/Ranking/Minhas
+  apostas vivem lá; views.css mantém ponteiros. [CODE Ag.5; usado por Ag.6/7]
+- FIX coordenação (Ag.0/Opus) [CODE]: components.css `.match-card:hover` tinha
+  `rgba()` hardcoded (resquício do Ag.3) que QUEBRARIA a trava de contraste do
+  verify.sh (o -o extrai o rgba, o filtro var( não pega) → trocado por var(--shadow-1)
+  (theme-aware). Único literal fora de tokens.css; agora trava VERDE.
+- Verificação [TOOL]: node --test = 43 verdes (28 base +3+3+4+5), 0 fail; node --check
+  OK em todos os js; trava de contraste VERDE (0 cor hardcoded fora de tokens.css em
+  base/components/views.css); todos os arquivos ≤300 LOC (components.css 296 é o maior).
+- I010 (ambiente, relacionado a I001/I002): o mount bash (virtiofs) serviu versões
+  STALE/TRUNCADAS de arquivos recém-escritos pelo file tool (live.js/bracket.js/
+  ui.js/leaderboard.js etc. liam truncados no `cat`/`cp`/`node`), e `rm` deu EPERM.
+  O file tool (Read/Write) = VERDADE (disco Windows). Mitigação: verificação rodada
+  reconstruindo os arquivos em /tmp a partir do conteúdo do file tool; `rm` dos
+  temporários resolvido com a permissão de delete do cowork. NÃO confiar em
+  `wc`/`ls`/`node --check` do bash p/ arquivo recém-escrito nesta sessão. [TOOL]
+- NEXT [USER] (máquina local, repo): `git add -A && git commit -m "feat(ui): polish abas Ao Vivo/Mata-mata/Ranking/Apostas (agentes 4-7) + DESIGN_SYSTEM, views-extra.css" && git push origin master`. Deploy automático (Cloud Run). Conferir visual nos 2 temas após subir.

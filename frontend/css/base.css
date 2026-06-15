@@ -25,14 +25,15 @@ a { color: var(--cyan); text-decoration: none; }
     var(--bg-0);
 }
 
-/* Glassmorphism */
+/* Card sólido (ex-glass): branco puro + sombra suave sobre o fundo claro.
+   No escuro, --card-bg/--shadow-card trocam para a superfície sólida escura. */
 .glass {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-card);
 }
 
 /* Botoes */
@@ -97,7 +98,8 @@ a { color: var(--cyan); text-decoration: none; }
 .chip-red { background: var(--red-soft); color: var(--red); border-color: transparent; }
 .chip-live { background: var(--red-soft); color: var(--red); border-color: transparent; }
 .chip-live .dot {
-  width: 7px; height: 7px; border-radius: 50%; background: var(--red);
+  width: 8px; height: 8px; border-radius: 50%; background: var(--live);
+  box-shadow: 0 0 0 3px var(--red-soft);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -158,6 +160,7 @@ a { color: var(--cyan); text-decoration: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* Utilitarios */
+.tnum { font-variant-numeric: tabular-nums; letter-spacing: 0; }
 .muted { color: var(--text-2); }
 .small { font-size: var(--fs-xs); }
 .grad-text {
