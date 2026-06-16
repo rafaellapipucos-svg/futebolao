@@ -413,3 +413,25 @@ compartilhados, não podem rodar em paralelo), com testes por agente. [USER pedi
   truncados (node --check/py_compile falhavam no mount, mas o disco via file tool
   estava íntegro). Suíte frontend não roda limpa aqui; rodar `node --test` localmente.
 - NEXT [USER]: `git add -A && git commit -m "fix(ui): tabela do ranking, flicker/anim (revalida sem piscar + countdown in-place), historico por data, minutagem ao vivo" && git push origin master`. Deploy Cloud Run; conferir nos 2 temas.
+
+## Rodada 15 — redesign da aba Tabela + tema escuro padrão (2026-06-16)
+- Aba TABELA (standings dos grupos, dashboard.js) refeita conforme crítica do [USER]:
+  * SEM rolagem horizontal (mobile e desktop): `.standings-table` agora é
+    `table-layout: fixed; width:100%` (numéricas 26px fixas, nome trunca); removido
+    `overflow-x:auto` do `.group-card`; grid `minmax(min(100%,340px),1fr)` p/ nunca
+    exceder a viewport (e body já tem overflow-x:hidden como rede).
+  * Contraste/redundância: removidas as PÍLULAS atrás da posição e os FUNDOS de
+    linha (verde/dourado) — fim do "3" dourado sobre pílula clara. Zona agora é só
+    BORDA ESQUERDA colorida no nome (verde 1º–2º, dourado 3º). Posição = texto.
+  * Hierarquia: nome 700/--text-0; estatísticas (J V E D GP GC SG) 500/--text-1
+    fs-xs (não competem); Pts 800/--text-0 fs-sm (âncora à direita).
+  * Espaçamento: gap pos↔bandeira↔nome 10px; cabeçalho com divisória mais forte
+    (2px --border-strong) que as linhas (1px --border); tabular-nums em tudo.
+  [CODE views/dashboard.js, css/views.css seção Dashboard]
+- D019 ACTIVE: TEMA PADRÃO = ESCURO (claro só por escolha explícita). theme.js
+  getTheme() default 'dark'; init inline do index.html default 'dark'; meta
+  theme-color #04070f. [USER pediu]
+- Verificação: dashboard.js + theme.js node --check OK (via /tmp); views.css sem
+  cor hardcoded (trava verde), seções intactas, `pos-badge` 100% removido; ≤300 LOC.
+  Mount I010 segue truncando no bash — validado por /tmp + file tool. [TOOL]
+- NEXT [USER]: `git add -A && git commit -m "feat(ui): tabela sem rolagem + criticas (borda de zona, hierarquia, contraste); tema escuro padrao" && git push origin master`. Deploy Cloud Run.

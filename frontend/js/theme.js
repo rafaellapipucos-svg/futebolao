@@ -1,4 +1,4 @@
-// theme.js — alterna entre claro (padrão) e escuro e lembra a escolha.
+// theme.js — alterna entre escuro (padrão) e claro e lembra a escolha.
 // A aplicação inicial (antes da 1ª pintura) é feita por um script inline no
 // index.html para evitar "flash" de tema errado.
 const KEY = 'theme';
@@ -21,7 +21,8 @@ function write(value) {
 }
 
 export function getTheme() {
-  return read() === 'dark' ? 'dark' : 'light';
+  // Padrão = ESCURO; só fica claro se o usuário escolheu explicitamente.
+  return read() === 'light' ? 'light' : 'dark';
 }
 
 export function applyTheme(theme) {

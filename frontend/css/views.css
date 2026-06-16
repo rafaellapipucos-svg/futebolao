@@ -19,48 +19,63 @@
   border: 1px solid var(--red-border); border-radius: var(--r-md);
   padding: 10px 14px; font-size: var(--fs-sm); font-weight: 600; }
 
-/* ---- Dashboard (tabela ao vivo) — Agente 2 ---- */
+/* ---- Dashboard (tabela ao vivo) — Agente 2 / refeita Rodada 15 ---- */
 .groups-grid { display: grid; gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-.group-card { padding: var(--sp-4); overflow-x: auto; } /* 9 colunas em 360px (R2-F5) */
+  /* min(100%, …): nunca força o card além da viewport (sem rolagem da página). */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.group-card { padding: var(--sp-3); } /* sem overflow-x: a tabela cabe sozinha */
 .group-card h3 { font-size: var(--fs-lg); font-weight: 800; color: var(--text-0);
   margin-bottom: var(--sp-3);
   display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
 .group-letter { color: var(--accent); font-weight: 800; }
-.standings-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-.standings-table th { color: var(--text-2); font-size: var(--fs-xs);
-  font-weight: 700; text-align: center; padding: 4px 3px;
+
+/* table-layout fixed + width:100%: a tabela NUNCA estoura — colunas numéricas
+   com largura fixa e o nome trunca. Zero rolagem horizontal em qualquer tela. */
+.standings-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* Cabeçalho: divisória mais FORTE que as linhas (separa título de dado). */
+.standings-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700;
+  text-align: center; padding: 2px 1px 7px; font-variant-numeric: tabular-nums;
+  border-bottom: 2px solid var(--border-strong); }
+.standings-table th.tname { text-align: left; padding-left: 12px; }
+/* Dados numéricos: peso MÉDIO e cor suave — não competem com nome/Pts. */
+.standings-table td { padding: 8px 1px; text-align: center;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs); font-weight: 500; color: var(--text-1);
   border-bottom: 1px solid var(--border); }
-.standings-table th.tname { text-align: left; }
-.standings-table td { padding: 7px 3px; text-align: center;
-  font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600;
-  border-bottom: 1px solid var(--border); }
-/* colunas numéricas: mesma largura em th/td, números sob seus cabeçalhos */
-.standings-table th:not(.tname), .standings-table td:not(.tname) {
-  width: 27px; min-width: 24px; }
 .standings-table tr:last-child td { border-bottom: none; }
-.standings-table td.tname { font-family: var(--font); text-align: left; width: auto; }
-.tname-wrap { display: flex; align-items: center; gap: 8px;
-  font-weight: 700; min-width: 0; }
-.tname-wrap .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.standings-table .pts { color: var(--text-0); font-weight: 800; }
-.pos-badge { width: 22px; height: 22px; border-radius: 7px; display: inline-grid;
-  place-items: center; font-size: var(--fs-xs); font-weight: 800;
-  background: var(--surface-2); color: var(--text-1); flex: none; }
-.pos-badge.q { background: var(--green-soft); color: var(--green); }
-.pos-badge.t { background: var(--gold-soft); color: var(--gold); }
-/* Classificados: 1º–2º vaga direta (verde), 3º repescagem (dourado) — bem sutil */
-tr.row-q td { background: var(--green-soft); }
-tr.row-q td { background: color-mix(in srgb, var(--green-soft) 45%, transparent); }
-tr.row-t td { background: var(--gold-soft); }
-tr.row-t td { background: color-mix(in srgb, var(--gold-soft) 45%, transparent); }
-tr.row-live td { background: var(--red-faint); }
+/* Colunas numéricas estreitas e iguais (8 colunas + nome cabem sem rolar). */
+.standings-table th:not(.tname), .standings-table td:not(.tname) { width: 26px; }
+/* Nome: pega o resto, fonte normal, NEGRITO, trunca. Borda esquerda = zona. */
+.standings-table td.tname { font-family: var(--font); text-align: left; width: auto;
+  font-size: var(--fs-sm); font-weight: 700; color: var(--text-0);
+  border-left: 3px solid transparent; padding-left: 9px; }
+.tname-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tname-wrap .pos { flex: none; min-width: 14px; text-align: center;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-weight: 700; color: var(--text-1); }
+.tname-wrap .team-flag { flex: none; }
+.tname-wrap .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; }
+.tname-wrap .clinch { flex: none; color: var(--success); font-weight: 800;
+  font-size: var(--fs-xs); }
+/* Pts: âncora à direita — negrito e cor cheia. */
+.standings-table .pts { color: var(--text-0); font-weight: 800; font-size: var(--fs-sm); }
+
+/* Zona de classificação SÓ pela borda esquerda (sem fundo de linha nem pílula:
+   remove a redundância e o problema de contraste do "3" dourado). */
+tr.row-q td.tname { border-left-color: var(--success); }
+tr.row-t td.tname { border-left-color: var(--gold); }
+/* Ao vivo: só o Pts pulsa (sinal sutil, sem pintar a linha inteira). */
 tr.row-live .pts { color: var(--live); animation: pulse 1.6s ease-in-out infinite; }
-.legend { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4);
+
+.legend { display: flex; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap;
+  align-items: center; margin-top: var(--sp-4);
   color: var(--text-2); font-size: var(--fs-xs); }
-.legend .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block;
-  margin-right: 5px; }
-@media (min-width: 880px) { .group-card { padding: var(--sp-5); } }
+.legend .bar { width: 14px; height: 3px; border-radius: 2px; display: inline-block;
+  margin-right: 6px; vertical-align: middle; }
+.legend .bar.q { background: var(--success); }
+.legend .bar.t { background: var(--gold); }
+@media (min-width: 880px) { .group-card { padding: var(--sp-4) var(--sp-5); } }
 
 /* ---- Bracket: estilos canônicos na seção "Mata-mata (Agente 5)" no fim ---- */
 

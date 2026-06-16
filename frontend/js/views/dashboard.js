@@ -2,28 +2,26 @@
 import { ensureData } from '../data.js';
 import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
-function clinchBadge(row) {
+// Marca discreta de vaga MATEMATICAMENTE garantida (✓ verde, alto contraste).
+// Detalhe completo no title; nada de pílula (evita ruído na célula do nome).
+function clinchMark(row) {
   if (row.clinched_first) {
-    return h('span', { class: 'chip chip-green', title: '1º lugar garantido' }, '1º ✓');
+    return h('span', { class: 'clinch', title: '1º lugar garantido' }, '✓');
   }
   if (row.clinched_top2) {
-    return h('span', { class: 'chip chip-green', title: 'Classificação direta garantida' }, '✓');
-  }
-  if (row.eliminated_top2) {
-    return h('span', { class: 'chip', title: 'Sem chance de terminar no top-2' }, '–');
+    return h('span', { class: 'clinch', title: 'Classificação garantida' }, '✓');
   }
   return null;
 }
 
 function standingRow(row) {
-  // 1º–2º = vaga direta (verde) · 3º = repescagem (dourado) · live por cima
-  const zone = row.position <= 2 ? 'row-q' : row.position === 3 ? 'row-t' : '';
+  // Zona indicada SÓ pela borda esquerda colorida (sem fundo de linha nem
+  // pílula): 1º–2º = vaga direta (verde) · 3º = repescagem (dourado) · 4º neutro.
+  const zone = row.position <= 2 ? 'row-q' : row.position === 3 ? 'row-t' : 'row-out';
   const tr = h('tr', { class: `${zone}${row.live ? ' row-live' : ''}`.trim() });
   const name = h('td', { class: 'tname' },
     h('span', { class: 'tname-wrap' },
-      h('span', {
-        class: `pos-badge ${row.position <= 2 ? 'q' : row.position === 3 ? 't' : ''}`,
-      }, String(row.position)),
+      h('span', { class: 'pos' }, String(row.position)),
       h('span', { class: 'team-flag flag-sm' }, flagContent(row.team)),
       h('span', {
         class: 'nm',
@@ -31,7 +29,7 @@ function standingRow(row) {
           ? `${row.team.name} — empate técnico, critérios FIFA esgotados`
           : row.team.name,
       }, row.team.name, row.tie_unresolved ? '*' : ''),
-      clinchBadge(row),
+      clinchMark(row),
     ),
   );
   tr.append(
@@ -86,10 +84,9 @@ export function renderDashboard(store) {
     ),
     content,
     h('div', { class: 'legend' },
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--success)' }), '1º–2º: vaga direta'),
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--exact)' }), '3º: concorre entre os 8 melhores'),
-      h('span', {}, h('span', { class: 'dot', style: 'background:var(--live)' }), 'linha pulsando: placar parcial'),
-      h('span', {}, '✓ vaga garantida · * empate técnico'),
+      h('span', {}, h('span', { class: 'bar q' }), '1º–2º: vaga direta'),
+      h('span', {}, h('span', { class: 'bar t' }), '3º: concorre entre os 8 melhores'),
+      h('span', {}, 'Pts pulsando = placar parcial · ✓ vaga garantida · * empate técnico'),
     ),
   );
 }
