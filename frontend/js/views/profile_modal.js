@@ -33,7 +33,9 @@ function profileBody(prof) {
   );
   const hist = prof.history.length
     ? h('div', { class: 'hist-list' },
-      prof.history.slice().sort((a, b) => b.match_id - a.match_id).map(histItem))
+      prof.history.slice()
+        .sort((a, b) => String(b.kickoff_utc).localeCompare(String(a.kickoff_utc)))
+        .map(histItem))
     : h('p', { class: 'muted small' }, 'Sem apostas encerradas ainda.');
   return h('div', { style: 'display:grid;gap:16px' },
     head,

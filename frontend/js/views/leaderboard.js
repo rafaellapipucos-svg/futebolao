@@ -76,9 +76,12 @@ function podium(rows) {
 
 function posCell(r) {
   const m = medalForPosition(r.position);
+  // Conteúdo num wrapper flex (NÃO no <td>): td com display:flex quebra o
+  // layout da linha da tabela. O <td> continua sendo célula de tabela normal.
   return h('td', { class: 'pos' },
-    m ? h('span', { class: `pos-medal pos-${m}` }, icon('medal', 16)) : null,
-    h('span', { class: 'pos-num tnum' }, String(r.position)));
+    h('span', { class: 'pos-inner' },
+      m ? h('span', { class: `pos-medal pos-${m}` }, icon('medal', 16)) : null,
+      h('span', { class: 'pos-num tnum' }, String(r.position))));
 }
 
 function tableRows(rows) {
@@ -89,10 +92,11 @@ function tableRows(rows) {
       posCell(r),
       h('td', { class: 'player clickable', title: 'Ver perfil',
         onClick: () => openProfile(r.user_id) },
-        avatarEl(r.avatar_url, r.display_name, 30),
-        h('span', { class: 'nm', title: r.display_name },
-          r.display_name, r.is_me ? ' (você)' : ''),
-        tied ? h('span', { class: 'tie-tag', title: 'Empate (desempate alfabético)' }, '=') : null),
+        h('span', { class: 'player-inner' },
+          avatarEl(r.avatar_url, r.display_name, 30),
+          h('span', { class: 'nm', title: r.display_name },
+            r.display_name, r.is_me ? ' (você)' : ''),
+          tied ? h('span', { class: 'tie-tag', title: 'Empate (desempate alfabético)' }, '=') : null)),
       h('td', { class: 'pts tnum' }, String(r.total),
         r.has_live && r.live_total > 0
           ? h('span', { class: 'live-delta' }, ` +${r.live_total} ao vivo`) : null),

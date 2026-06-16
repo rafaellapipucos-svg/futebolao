@@ -3,7 +3,8 @@ import { api } from './api.js';
 import { renderShell } from './layout.js';
 import { resolveRoute, startRouter } from './router.js';
 import { connectLive } from './sse.js';
-import { prefetch } from './data.js';
+import { prefetch, markStale, refreshData } from './data.js';
+import { startCountdownTicker } from './countdown_ticker.js';
 import { store } from './store.js';
 import { h } from './ui.js';
 import { renderAdmin } from './views/admin.js';
@@ -46,17 +47,25 @@ function renderApp(state) {
   }
 }
 
+// Chaves de cache afetadas por updates ao vivo + a chave que cada rota exibe.
+const LIVE_KEYS = ['matches', 'standings', 'leaderboard', 'bracket', 'live'];
+const ROUTE_DATA_KEY = {
+  dashboard: 'standings', jogos: 'matches', chaveamento: 'bracket',
+  'ao-vivo': 'live', ranking: 'leaderboard', apostas: 'matches',
+};
+let liveVersion = 0;
+
 function ensureLiveConnection(state) {
   if (state.user && !disconnectLive) {
     disconnectLive = connectLive((version) => {
-      const current = store.get();
-      if (version !== current.liveVersion) {
-        // invalida caches: a view ativa refaz o fetch e re-renderiza
-        store.set({
-          liveVersion: version,
-          matches: null, standings: null, leaderboard: null, bracket: null, live: null,
-        });
-      }
+      if (version === liveVersion) return;
+      liveVersion = version;
+      // Revalida SEM piscar: marca tudo como stale (revalida ao visitar) e
+      // atualiza só a view ativa em 2º plano, trocando o dado quando chega —
+      // sem zerar caches (que derrubava a tela para o skeleton a cada update).
+      markStale(LIVE_KEYS);
+      const activeKey = ROUTE_DATA_KEY[store.get().route.name];
+      if (activeKey) refreshData(store, activeKey);
     });
   } else if (!state.user && disconnectLive) {
     disconnectLive();
@@ -101,6 +110,7 @@ async function boot() {
 
   ensureLiveConnection(store.get());
   renderApp(store.get());
+  startCountdownTicker(); // countdowns atualizam in-place (sem re-render do app)
 
   // Aquece as abas principais em 2º plano (após o 1º paint) p/ navegação
   // instantânea. SSE mantém tudo fresco depois.

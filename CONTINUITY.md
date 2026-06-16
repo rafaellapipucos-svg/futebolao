@@ -379,3 +379,37 @@ compartilhados, não podem rodar em paralelo), com testes por agente. [USER pedi
   temporários resolvido com a permissão de delete do cowork. NÃO confiar em
   `wc`/`ls`/`node --check` do bash p/ arquivo recém-escrito nesta sessão. [TOOL]
 - NEXT [USER] (máquina local, repo): `git add -A && git commit -m "feat(ui): polish abas Ao Vivo/Mata-mata/Ranking/Apostas (agentes 4-7) + DESIGN_SYSTEM, views-extra.css" && git push origin master`. Deploy automático (Cloud Run). Conferir visual nos 2 temas após subir.
+
+## Rodada 14 — 5 bugs pós-deploy (2026-06-16)
+[USER] reportou 5 problemas; corrigidos em ordem:
+- BUG1 tabela do Ranking quebrada (posição em cima, nome embaixo): causa = `display:flex`
+  direto no `<td>` (pos e player) quebra a linha da tabela. Fix: conteúdo das células
+  em wrappers `.pos-inner`/`.player-inner`; `<td>` volta a ser célula; `table-layout:
+  fixed` + larguras (#40 / Pts48 / num66) p/ números alinharem e nome truncar.
+  [CODE leaderboard.js, views-extra.css]
+- BUG2+BUG3 (mesma raiz) animações "aceleradas" + tela piscando: cada update SSE
+  ZERAVA os caches (`matches:null`…) → view piscava p/ skeleton e voltava; + tickers
+  de 30s (`store.set({})`) re-renderizavam o app TODO (replaceChildren recarrega
+  imagens/reinicia animações). Fix: (a) data.js revalida sem piscar (Set `stale` +
+  `markStale`/`refreshData`; `ensureData` devolve o dado atual e revalida em 2º plano);
+  (b) main.js rastreia versão em closure (sem re-render só por bump) e revalida só a
+  view ativa; (c) tickers removidos de matches.js/mybets.js → novo `countdown_ticker.js`
+  atualiza os countdowns IN-PLACE (texto/largura) a cada 1s, sem re-render.
+  [CODE data.js, main.js, countdown_ticker.js (novo), betbox.js (+data-kickoff),
+  matches.js, mybets.js]
+- BUG4 histórico do perfil incompleto/fora de ordem: `closed_history` não trazia
+  `kickoff_utc` e o front ordenava por `match_id` (≠ cronológico). Fix: backend inclui
+  `kickoff_utc` e ordena desc (mais recente 1º); front ordena por `kickoff_utc` desc.
+  [CODE services/profiles.py, profile_modal.js]
+- BUG5 minutagem ausente no Ao Vivo: `m.minute` vem null (sem provider/admin). Fix:
+  novo `format.liveMinute(kickoff, serverMinute)` — usa o minuto do servidor se houver,
+  senão ESTIMA pelo relógio (com ~15min de intervalo). Usado em live.js e matches.js.
+  [CODE format.js, live.js, matches.js]
+- Verificação: core backend 160/160 (profiles.py reconstruído no /tmp p/ furar o
+  cache do mount); liveMinute 10/10 (teste standalone + novo teste em format.test.js);
+  todos os arquivos editados inspecionados (sintaxe ok), sem refs órfãs
+  (minuteLabel/ticker), sem cor hardcoded. [TOOL]
+- I010 reincidiu forte: o mount do bash serviu TODOS os arquivos recém-escritos
+  truncados (node --check/py_compile falhavam no mount, mas o disco via file tool
+  estava íntegro). Suíte frontend não roda limpa aqui; rodar `node --test` localmente.
+- NEXT [USER]: `git add -A && git commit -m "fix(ui): tabela do ranking, flicker/anim (revalida sem piscar + countdown in-place), historico por data, minutagem ao vivo" && git push origin master`. Deploy Cloud Run; conferir nos 2 temas.

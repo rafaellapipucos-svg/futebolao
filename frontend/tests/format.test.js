@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { countdown, dayKey, groupByDay, minuteLabel, statusLabel, teamFlag, flagIsAbbr, flagSrc } from '../js/format.js';
+import { countdown, dayKey, groupByDay, minuteLabel, liveMinute, statusLabel, teamFlag, flagIsAbbr, flagSrc } from '../js/format.js';
 
 test('countdown formata dias/horas/minutos/segundos', () => {
   const base = Date.parse('2026-06-11T12:00:00Z');
@@ -39,6 +39,20 @@ test('minuteLabel e statusLabel', () => {
   assert.equal(minuteLabel('live', null), 'AO VIVO');
   assert.equal(minuteLabel('finished', 90), '');
   assert.equal(statusLabel('finished'), 'Encerrado');
+});
+
+test('liveMinute: usa minuto do servidor; sem ele, estima pelo relógio', () => {
+  const base = Date.parse('2026-06-15T18:00:00Z');
+  const ago = (m) => new Date(base - m * 60000).toISOString();
+  assert.equal(liveMinute('2026-06-15T17:00:00Z', 37, base), "37'"); // servidor manda
+  assert.equal(liveMinute(ago(0), null, base), "1'");
+  assert.equal(liveMinute(ago(23), null, base), "23'");
+  assert.equal(liveMinute(ago(50), null, base), 'Intervalo');
+  assert.equal(liveMinute(ago(70), null, base), "55'"); // 2º tempo desconta ~15min
+  assert.equal(liveMinute(ago(108), null, base), "90+'");
+  assert.equal(liveMinute(ago(140), null, base), 'AO VIVO');
+  assert.equal(liveMinute(ago(-30), null, base), 'AO VIVO'); // antes do apito
+  assert.equal(liveMinute('lixo', null, base), 'AO VIVO');
 });
 
 const ENG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';

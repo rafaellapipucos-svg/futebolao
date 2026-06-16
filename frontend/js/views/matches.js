@@ -1,7 +1,7 @@
 // views/matches.js — Aba 2: jogos por fase/dia/horário com apostas inline.
 import { renderBetBox } from '../betbox.js';
 import { ensureData } from '../data.js';
-import { fmtTime, groupByDay, minuteLabel } from '../format.js';
+import { fmtTime, groupByDay, liveMinute } from '../format.js';
 import { emptyState, flagContent, h, icon, skeletonList } from '../ui.js';
 
 const STAGE_FILTERS = [
@@ -11,15 +11,6 @@ const STAGE_FILTERS = [
 
 let activeFilter = 'ALL';
 let searchQuery = '';
-let ticker = null;
-
-function ensureTicker(store) {
-  if (ticker) return;
-  ticker = setInterval(() => {
-    const route = store.get().route.name;
-    if (route === 'jogos' || route === 'apostas') store.set({}); // re-render p/ countdown
-  }, 30000);
-}
 
 // Busca acento-insensível ("Japao" encontra "Japão"): remove marcas diacríticas.
 const norm = (s) => String(s).normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
@@ -57,7 +48,7 @@ function scoreBox(match) {
     ),
     match.status === 'live'
       ? h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }),
-        minuteLabel(match.status, match.minute))
+        liveMinute(match.kickoff_utc, match.minute))
       : h('span', { class: 'chip' }, 'Encerrado'),
   );
 }
@@ -114,7 +105,6 @@ function searchBox(store) {
 }
 
 export function renderMatches(store) {
-  ensureTicker(store);
   const data = ensureData(store, 'matches');
   const q = norm(searchQuery.trim());
   let content;

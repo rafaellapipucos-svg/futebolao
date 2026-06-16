@@ -148,26 +148,31 @@
 .podium-slot.first .podium-pts b { color: var(--exact); }
 
 /* --- Tabela de classificação --- */
-.lb-card { padding: var(--sp-2) var(--sp-4); }
-.lb-table { width: 100%; border-collapse: collapse; }
-.lb-table td, .lb-table th { padding: 11px 8px; font-size: var(--fs-sm);
+.lb-card { padding: var(--sp-2) var(--sp-3); }
+/* table-layout fixed: larguras estáveis p/ os números alinharem sob os
+   cabeçalhos e o NOME truncar em vez de empurrar as colunas (mobile). */
+.lb-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.lb-table td, .lb-table th { padding: 10px 4px; font-size: var(--fs-sm);
   text-align: center; border-bottom: 1px solid var(--border); }
 .lb-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700; }
 .lb-table tbody tr:last-child td { border-bottom: none; }
-/* Nome à esquerda; numéricos centrados sob seus cabeçalhos (.tnum no JS). */
+/* Larguras: #, Pts e numéricas estreitas; "Jogador" fica com o resto. */
+.lb-table th.pos, .lb-table td.pos { width: 40px; }
+.lb-table th:nth-child(3), .lb-table td:nth-child(3) { width: 48px; }
+.lb-table th:nth-child(n+4), .lb-table td:nth-child(n+4) { width: 66px; }
+/* Posição: medalha + número num wrapper flex (NÃO no <td> — display:flex no
+   td quebra a linha da tabela). O <td> segue como célula de tabela. */
+.lb-table td.pos .pos-inner { display: inline-flex; align-items: center;
+  justify-content: center; gap: 5px; }
+.pos-num { font-weight: 700; color: var(--text-1); }
+/* Nome à esquerda; avatar+nome+empate num wrapper flex que trunca o nome. */
 .lb-table td.player, .lb-table th.player { text-align: left; }
-.lb-table td.player { display: flex; align-items: center; gap: 10px;
-  font-weight: 700; min-width: 0; }
+.lb-table td.player .player-inner { display: flex; align-items: center;
+  gap: 9px; min-width: 0; font-weight: 700; }
 .lb-table td.player .avatar { flex: none; }
 .lb-table td.player .nm { overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; min-width: 0; }
 .lb-table .pts { color: var(--text-0); font-weight: 800; }
-
-/* Coluna de posição: medalha (ícone novo) + número, conectando pódio↔tabela. */
-.lb-table td.pos, .lb-table th.pos { width: 1%; white-space: nowrap; }
-.lb-table td.pos { display: flex; align-items: center; justify-content: center;
-  gap: 6px; }
-.pos-num { font-weight: 700; color: var(--text-1); }
 .pos-medal { display: inline-flex; flex: none; }
 .pos-medal.pos-gold { color: var(--exact); }
 .pos-medal.pos-silver { color: var(--text-2); }

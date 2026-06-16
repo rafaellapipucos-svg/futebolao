@@ -4,16 +4,6 @@ import { emptyState, h, icon, skeletonList } from '../ui.js';
 import { matchCard } from './matches.js';
 
 let activeTab = 'future'; // 'future' | 'live' | 'closed'
-let ticker = null;
-
-// Mantém o countdown/barra de progresso vivos mesmo se a aba Jogos nunca foi
-// aberta. Só re-renderiza quando esta aba está na tela (evita trabalho à toa).
-function ensureTicker(store) {
-  if (ticker) return;
-  ticker = setInterval(() => {
-    if (store.get().route.name === 'apostas') store.set({});
-  }, 30000);
-}
 
 // Agrega os pontos das apostas já pontuadas (puro/testável): total ganho,
 // nº de cravadas (placar exato) e nº de resultados certos não exatos.
@@ -48,7 +38,6 @@ function statusBar(withBets) {
 }
 
 export function renderMyBets(store) {
-  ensureTicker(store);
   const data = ensureData(store, 'matches');
   let content;
   let summaryEl = null;

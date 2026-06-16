@@ -16,11 +16,13 @@ def _avatar_url(user) -> Optional[str]:
 
 
 def closed_history(conn: Db, user_id: int) -> list:
-    """Apostas de jogos ENCERRADOS feitas pelo usuário (com pontos)."""
-    return [
+    """Apostas de jogos ENCERRADOS feitas pelo usuário (com pontos), da partida
+    MAIS RECENTE para a mais antiga (por data do apito, não por id)."""
+    items = [
         {
             "match_id": m["id"],
             "stage_label": m["stage_label"],
+            "kickoff_utc": m["kickoff_utc"],
             "home": m["home"],
             "away": m["away"],
             "home_score": m["home_score"],
@@ -31,6 +33,9 @@ def closed_history(conn: Db, user_id: int) -> list:
         for m in list_matches(conn, user_id)
         if m["status"] == "finished" and m["my_bet"]
     ]
+    # kickoff_utc é ISO-8601 → ordenação lexical = cronológica. Mais recente 1º.
+    items.sort(key=lambda x: x["kickoff_utc"], reverse=True)
+    return items
 
 
 def public_profile(conn: Db, user_id: int) -> Optional[Dict]:

@@ -2,6 +2,7 @@
 // publicos de todos os jogadores (revelados a partir do apito). Clicar num
 // jogador abre o perfil publico.
 import { ensureData } from '../data.js';
+import { liveMinute } from '../format.js';
 import { avatarEl, emptyState, flagContent, h, skeletonList } from '../ui.js';
 import { openProfile } from './profile_modal.js';
 
@@ -77,7 +78,7 @@ function liveMatch(m) {
       h('div', { class: 'live-score' },
         h('b', { class: 'tnum' }, `${m.home_score ?? 0} × ${m.away_score ?? 0}`),
         h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }),
-          m.minute != null ? `${m.minute}'` : 'AO VIVO')),
+          liveMinute(m.kickoff_utc, m.minute))),
       teamSide(m.away, true)),
     h('div', { class: 'live-bettors' },
       m.bets.length

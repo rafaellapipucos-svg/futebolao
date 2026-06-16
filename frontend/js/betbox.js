@@ -87,7 +87,8 @@ function openEditor(store, match) {
   const progress = kickoffProgress(match.kickoff_utc);
   const urgent = progress >= 0.5; // <12h p/ o apito: countdown ganha cor de alerta
   const countdownEl = cd
-    ? h('div', { class: `countdown-bar${urgent ? ' is-urgent' : ''}`, title: 'tempo até o apito' },
+    ? h('div', { class: `countdown-bar${urgent ? ' is-urgent' : ''}`, title: 'tempo até o apito',
+      dataset: { kickoff: match.kickoff_utc } },
       h('div', { class: 'countdown-head' },
         icon('clock', 13),
         h('span', { class: 'countdown-label' }, 'Fecha em '),
