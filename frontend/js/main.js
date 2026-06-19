@@ -6,6 +6,7 @@ import { connectLive } from './sse.js';
 import { prefetch, markStale, refreshData } from './data.js';
 import { startCountdownTicker } from './countdown_ticker.js';
 import { store } from './store.js';
+import { initTheme } from './theme.js';
 import { h } from './ui.js';
 import { renderAdmin } from './views/admin.js';
 import { renderBracket } from './views/bracket.js';
@@ -70,6 +71,7 @@ function ensureLiveConnection(state) {
 }
 
 async function boot() {
+  initTheme(); // crava o tema certo (e roda o reset) mesmo se o index.html vier de cache
   let config = store.get().config;
   try {
     config = await api.get('/api/meta/config'); // também emite cookie CSRF

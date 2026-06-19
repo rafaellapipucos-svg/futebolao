@@ -137,3 +137,24 @@ export function teamFlag(team) {
   const code = team.code || '';
   return SUBDIV_ABBR[code] || code.slice(0, 2).toUpperCase() || '?';
 }
+
+// Sigla de 3 letras EM PORTUGUÊS (estilo transmissão BR) p/ a tabela compacta
+// quando o card é estreito. Onde o código FIFA já casa com o PT, repete (BRA,
+// ARG, FRA…); onde difere, usa a sigla PT usual (Alemanha=ALE, Inglaterra=ING,
+// Holanda=HOL, EUA, Coreia=COR…). Fallback: 3 letras do código. Pura/testável.
+const SIGLA_PT = {
+  MEX: 'MEX', RSA: 'AFS', KOR: 'COR', CZE: 'TCH', CAN: 'CAN', BIH: 'BOS',
+  QAT: 'CAT', SUI: 'SUI', BRA: 'BRA', MAR: 'MAR', HAI: 'HAI', SCO: 'ESC',
+  USA: 'EUA', PAR: 'PAR', AUS: 'AUS', TUR: 'TUR', GER: 'ALE', CUW: 'CUR',
+  CIV: 'CDM', ECU: 'EQU', NED: 'HOL', JPN: 'JAP', SWE: 'SUE', TUN: 'TUN',
+  BEL: 'BEL', EGY: 'EGI', IRN: 'IRA', NZL: 'NZL', ESP: 'ESP', CPV: 'CAB',
+  KSA: 'ARA', URU: 'URU', FRA: 'FRA', SEN: 'SEN', IRQ: 'IRQ', NOR: 'NOR',
+  ARG: 'ARG', ALG: 'ALG', AUT: 'AUT', JOR: 'JOR', POR: 'POR', COD: 'RDC',
+  UZB: 'UZB', COL: 'COL', ENG: 'ING', CRO: 'CRO', GHA: 'GAN', PAN: 'PAN',
+};
+
+export function siglaPt(team) {
+  if (!team) return '';
+  const code = team.code || '';
+  return SIGLA_PT[code] || code.slice(0, 3).toUpperCase();
+}

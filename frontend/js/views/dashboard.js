@@ -1,5 +1,6 @@
 // views/dashboard.js — Aba 1: tabela de classificação ao vivo dos 12 grupos.
 import { ensureData } from '../data.js';
+import { siglaPt } from '../format.js';
 import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
 // Marca discreta de vaga MATEMATICAMENTE garantida (✓ verde, alto contraste).
@@ -37,6 +38,10 @@ function standingRow(row) {
           ? `${row.team.name} — empate técnico, critérios FIFA esgotados`
           : row.team.name,
       }, row.team.name, row.tie_unresolved ? '*' : ''),
+      // Sigla PT (só aparece quando o card é estreito — via container query no CSS);
+      // assim o nome nunca é cortado e não precisa de rolagem horizontal.
+      h('span', { class: 'sigla', title: row.team.name },
+        siglaPt(row.team), row.tie_unresolved ? '*' : ''),
       clinchMark(row),
     ),
   );

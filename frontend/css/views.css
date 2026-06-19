@@ -22,8 +22,10 @@
 /* ---- Dashboard (tabela ao vivo) — Agente 2 / refeita Rodada 15 ---- */
 .groups-grid { display: grid; gap: var(--sp-4);
   /* min(100%, …): nunca força o card além da viewport (sem rolagem da página). */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
-.group-card { padding: var(--sp-3); } /* sem overflow-x: a tabela cabe sozinha */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+/* container-type: permite a "container query" abaixo decidir nome completo × sigla
+   pela LARGURA DO CARD (não da tela), então funciona em qualquer nº de colunas. */
+.group-card { padding: var(--sp-3); container-type: inline-size; }
 .group-card h3 { font-size: var(--fs-lg); font-weight: 800; color: var(--text-0);
   margin-bottom: var(--sp-3);
   display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
@@ -56,6 +58,13 @@
 .tname-wrap .team-flag { flex: none; }
 .tname-wrap .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   min-width: 0; }
+/* Sigla PT (Rodada 16): escondida quando o card é largo (mostra o nome completo);
+   aparece só quando o card fica estreito — nome nunca corta e zero rolagem. */
+.tname-wrap .sigla { display: none; flex: none; font-weight: 700; }
+@container (max-width: 400px) {
+  .tname-wrap .nm { display: none; }
+  .tname-wrap .sigla { display: inline; }
+}
 .tname-wrap .clinch { flex: none; color: var(--success); font-weight: 800;
   font-size: var(--fs-xs); }
 /* Pts: âncora à direita — negrito e cor cheia. */

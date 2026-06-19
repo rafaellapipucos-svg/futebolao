@@ -30,12 +30,22 @@ function write(value) {
 }
 
 export function getTheme() {
-  // Padrão = ESCURO; aplica o reset único e só fica claro por escolha explícita.
-  try {
-    return resolveTheme(localStorage);
-  } catch (err) {
-    return 'dark';
+  // Fonte da verdade = o data-theme JÁ aplicado (pelo inline do index.html, que
+  // roda antes da 1ª pintura). Ler dele garante que o BOTÃO nunca discorde da
+  // TELA. Sem DOM (testes), cai no resolveTheme (reset + leitura da preferência).
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const applied = document.documentElement.getAttribute('data-theme');
+    if (applied === 'light' || applied === 'dark') return applied;
   }
+  return resolveTheme(localStorage);
+}
+
+// Reaplica o tema no boot (rede de segurança caso o index.html venha de cache
+// antigo sem o reset): roda o reset idempotente e crava o data-theme correto.
+export function initTheme() {
+  const t = resolveTheme(localStorage);
+  applyTheme(t);
+  return t;
 }
 
 export function applyTheme(theme) {

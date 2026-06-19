@@ -485,3 +485,26 @@ horário voltava. FIX: `upsert_fixture` NÃO atualiza mais `kickoff_utc` no ON C
 Core agora **186 OK**. Cadência (idle 5min/PRE 30min) segue válida, mas ESTE era o motivo
 do "22h fixo". Pós-deploy, o poller corrige o J29 p/ 21:30 em ~5min e NÃO reverte mais.
 [CODE db/repos/matches.py] [TOOL]
+
+### Rodada 16 — siglas PT na Tabela (2026-06-19)
+[USER] nomes da Tabela cortados, sem querer scroll → escolheu "sigla no celular,
+oficial e em português". Solução: `format.siglaPt(team)` (mapa code→sigla PT dos 48
+times: GER=ALE, ENG=ING, NED=HOL, USA=EUA, KSA=ARA, RSA=AFS, KOR=COR, JPN=JAP…; sem
+clash ARG/ALG, AUS/AUT, IRN/IRQ; fallback = 3 letras do código). `dashboard.js`
+renderiza nome completo + sigla; CSS usa CONTAINER QUERY em `.group-card`
+(`@container (max-width:400px)`) → card estreito mostra sigla, card largo mostra o
+nome inteiro; grid min subiu 340→440px p/ o desktop caber o nome. Verde: node:test
+**65 OK** (+4 sigla); mapa validado (48, 0 duplicadas, todas 3 letras). [CODE]
+- Siglas a confirmar no uso (convenção BR pode variar): NZL (Nova Zelândia), CAB
+  (Cabo Verde), RDC (RD Congo), GAN (Gana), CDM (Costa do Marfim) — fáceis de trocar.
+
+### Rodada 16 — I013: botão de tema discordava da tela (2026-06-19)
+[USER] botão mostrava sol (achava escuro) mas a tela estava clara; só ia p/ escuro
+no 2º clique. Causa: DOIS cálculos do tema — o inline do index.html pinta o
+data-theme; o `getTheme()` recalculava por conta própria p/ o ícone do botão. Se
+divergem (ex.: index.html em cache antigo sem o reset), botão e tela ficam
+inconsistentes e o 1º clique "não faz nada". NÃO havia data-theme hardcoded.
+FIX: `getTheme()` agora LÊ o data-theme já aplicado (fonte única = a tela); +
+`initTheme()` no boot do main.js reaplica reset+tema (rede de segurança p/ cache).
+tokens.css: `:root`=claro, `:root[data-theme="dark"]`=escuro (default vem do inline/init).
+Verde: theme.test 4 OK + simulação dos cenários A–D. [CODE theme.js, main.js]
