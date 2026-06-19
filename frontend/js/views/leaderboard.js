@@ -1,6 +1,6 @@
 // views/leaderboard.js — Aba 4: ranking com parciais ao vivo + "Como Jogar".
 import { ensureData } from '../data.js';
-import { avatarEl, emptyState, h, icon, modal, skeletonList } from '../ui.js';
+import { avatarEl, emptyState, h, icon, skeletonList } from '../ui.js';
 import { openProfile } from './profile_modal.js';
 
 // --- Helpers puros (testáveis em tests/leaderboard.test.js) ---
@@ -24,54 +24,43 @@ export function tiedPositions(rows) {
   return ties;
 }
 
-function howToPlayContent() {
-  return h('div', {},
-    h('p', {}, 'Você aposta no placar exato de cada jogo. A pontuação base é:'),
-    h('ul', { class: 'rules-list' },
-      h('li', {}, h('b', {}, '1 ponto'), ' — acertar o resultado (vitória A, vitória B ou empate).'),
-      h('li', {}, h('b', {}, '+2 pontos extras'), ' — cravar o placar exato (total de ',
-        h('b', {}, '3 pontos'), ' na partida).'),
-    ),
-    h('p', {}, 'Nas fases eliminatórias os pontos são multiplicados:'),
-    h('table', { class: 'rules-table' },
-      h('thead', {}, h('tr', {},
-        h('th', {}, 'Fase'), h('th', {}, 'Multiplicador'),
-        h('th', {}, 'Resultado'), h('th', {}, 'Cravada'))),
-      h('tbody', {},
-        [['Fase de Grupos', 1], ['16 avos de final', 2], ['Oitavas de final', 3],
-          ['Quartas de final', 4], ['Semifinais', 5], ['Disputa de 3º lugar', 5],
-          ['Grande Final', 10]].map(([label, mult]) => h('tr', {},
-          h('td', {}, label), h('td', { class: 'tnum' }, `×${mult}`),
-          h('td', { class: 'tnum' }, String(1 * mult)),
-          h('td', { class: 'tnum' }, String(3 * mult)))),
-      ),
-    ),
-    h('ul', { class: 'rules-list', style: 'margin-top:16px' },
-      h('li', {}, 'As apostas de cada jogo fecham ', h('b', {}, 'no apito inicial'),
-        '. Depois disso, nada muda — nem pra você, nem pra ninguém.'),
-      h('li', {}, 'No mata-mata vale o ', h('b', {}, 'placar dos 90 minutos'),
-        ' (+acréscimos). Empate é um resultado válido para a aposta; prorrogação e pênaltis só definem quem avança.'),
-      h('li', {}, 'Durante os jogos o ranking mostra ', h('b', {}, 'parciais ao vivo'),
-        ' — os pontos só ficam definitivos no apito final.'),
-      h('li', {}, 'Confrontos do mata-mata só abrem para apostas quando os dois classificados estão definidos.'),
-    ),
-  );
+const MEDAL_EMOJI = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+
+// Slots do pódio guiados por POSIÇÃO (não por índice de coluna): cada posição
+// 1/2/3 vira um "tier" com TODOS os empatados nela e a medalha correta da posição.
+// Empate em 2º ⇒ os dois recebem PRATA e o slot do 3º fica vazio (NENHUM bronze
+// indevido — corrige o bug das imagens). Pura/testável.
+export function podiumSlots(rows) {
+  const tier = (pos, place) => {
+    const entries = rows.filter((r) => r.position === pos);
+    return entries.length
+      ? { entries, position: pos, place, medal: medalForPosition(pos) }
+      : null;
+  };
+  return { second: tier(2, 'second'), first: tier(1, 'first'), third: tier(3, 'third') };
 }
 
 function podium(rows) {
-  const [first, second, third] = rows;
-  const slot = (entry, cls, medal) => (entry
-    ? h('div', { class: `glass podium-slot clickable ${cls}`,
-      title: 'Ver perfil', onClick: () => openProfile(entry.user_id) },
-      h('span', { class: 'medal' }, medal),
-      avatarEl(entry.avatar_url, entry.display_name, cls === 'first' ? 64 : 50),
-      h('span', { class: 'podium-name', title: entry.display_name }, entry.display_name),
+  const slots = podiumSlots(rows);
+  const render = (t) => {
+    if (!t) return h('div', { class: 'podium-slot podium-empty', 'aria-hidden': 'true' });
+    const e = t.entries[0];
+    const extra = t.entries.length - 1;  // empatados além do representante
+    return h('div', { class: `glass podium-slot clickable ${t.place}`,
+      title: 'Ver perfil', onClick: () => openProfile(e.user_id) },
+      h('span', { class: 'medal' }, MEDAL_EMOJI[t.medal] || ''),
+      avatarEl(e.avatar_url, e.display_name, t.place === 'first' ? 64 : 50),
+      h('span', { class: 'podium-name', title: e.display_name }, e.display_name),
       h('span', { class: 'podium-pts tnum' },
-        h('b', {}, String(entry.total)), h('span', { class: 'unit' }, 'pts')),
-    )
-    : h('div', { class: 'podium-slot podium-empty', 'aria-hidden': 'true' }));
+        h('b', {}, String(e.total)), h('span', { class: 'unit' }, 'pts')),
+      extra > 0
+        ? h('span', { class: 'podium-tie', title: 'empate nesta posição' },
+          `+${extra} empatado${extra > 1 ? 's' : ''}`)
+        : null,
+    );
+  };
   return h('div', { class: 'podium' },
-    slot(second, 'second', '🥈'), slot(first, 'first', '🥇'), slot(third, 'third', '🥉'));
+    render(slots.second), render(slots.first), render(slots.third));
 }
 
 function posCell(r) {
@@ -118,7 +107,7 @@ export function renderLeaderboard(store) {
   } else {
     const rows = data.leaderboard;
     content = h('div', {},
-      podium(rows.slice(0, 3)),
+      podium(rows),
       h('div', { class: 'glass lb-card' },
         h('table', { class: 'lb-table' },
           h('thead', {}, h('tr', {},
@@ -137,11 +126,6 @@ export function renderLeaderboard(store) {
         h('h1', {}, 'Ranking ', h('span', { class: 'grad-text' }, 'da galera')),
         h('p', { class: 'sub' }, 'Placar em tempo real, atualizado a cada lance.'),
       ),
-      h('button', {
-        class: 'btn btn-primary',
-        'aria-label': 'Como Jogar',
-        onClick: () => modal('Como Jogar', howToPlayContent()),
-      }, icon('help', 18), 'Como Jogar'),
     ),
     content,
   );

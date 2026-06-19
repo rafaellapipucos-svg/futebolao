@@ -25,7 +25,8 @@ export function fmtMatchDate(iso) {
 // truncado com title + placar. Bandeira dimensionada por classe (--flag-sm),
 // nunca por font-size inline.
 function sideRow(side, score, isWinner, isLoser) {
-  const cls = `bracket-team${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`;
+  const cls = `bracket-team${isWinner ? ' winner' : ''}${isLoser ? ' loser' : ''}`
+    + `${side.predicted ? ' predicted' : ''}`;
   if (!side.team) {
     return h('div', { class: cls },
       h('span', { class: 't' },
@@ -35,10 +36,14 @@ function sideRow(side, score, isWinner, isLoser) {
       h('span', { class: 'sc' }, ''),
     );
   }
+  // Times de previsão (ainda não garantidos) ganham marca sutil + dica no title.
+  const nameTitle = side.predicted
+    ? `${side.team.name} — previsão pelo ranking atual`
+    : side.team.name;
   return h('div', { class: cls },
     h('span', { class: 't' },
       h('span', { class: 'team-flag flag-sm' }, flagContent(side.team)),
-      h('span', { class: 'nm', title: side.team.name }, side.team.name),
+      h('span', { class: 'nm', title: nameTitle }, side.team.name),
       isWinner ? h('span', { class: 'win-check', 'aria-label': 'classificado' }, '✓') : null,
     ),
     h('span', { class: 'sc' }, score == null ? '' : String(score)),
@@ -58,7 +63,11 @@ function matchBox(m) {
     h('div', { class: 'bracket-head' },
       h('span', { class: 'mnum' }, tag),
       h('span', { class: 'mdate tnum' }, fmtMatchDate(m.kickoff_utc)),
-      isLive ? h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }), 'AO VIVO') : null,
+      isLive
+        ? h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }), 'AO VIVO')
+        : (m.predicted
+          ? h('span', { class: 'chip chip-pred', title: 'Confronto previsto pelo ranking atual' }, 'prev.')
+          : null),
     ),
     h('div', { class: 'bracket-versus' },
       sideRow(m.home, m.home_score, homeWin, awayWin),
@@ -114,9 +123,12 @@ export function renderBracket(store) {
     h('div', { class: 'page-head' },
       h('div', {},
         h('h1', {}, 'Chaveamento ', h('span', { class: 'grad-text' }, 'do título')),
-        h('p', { class: 'sub' }, 'Escolha a fase para ver o chaveamento.'),
+        h('p', { class: 'sub' }, 'Previsão com base no ranking atual.'),
       ),
     ),
+    h('p', { class: 'bracket-note' },
+      'Os times ainda não garantidos são projeção e mudam conforme a tabela; '
+      + 'confrontos já decididos aparecem fixos.'),
     bar,
     content,
   );

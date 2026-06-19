@@ -234,3 +234,41 @@
   .status-lbl { letter-spacing: 0; }
   .status-item { gap: 7px; padding: var(--sp-2) 4px; }
 }
+
+/* ===================== Rodada 16 ===================== */
+/* Mata-mata preditivo (bracket.js): nota + chip "prev." + lado projetado */
+.bracket-note { color: var(--text-2); font-size: var(--fs-xs); line-height: 1.4;
+  margin: 0 0 var(--sp-3); }
+.chip-pred { background: var(--cyan-soft); color: var(--accent);
+  border: 1px solid var(--cyan-soft); font-weight: 700; }
+.bracket-team.predicted .nm { color: var(--text-1); font-style: italic; }
+.bracket-team.predicted .team-flag { opacity: .85; }
+
+/* Mini-placar de pênaltis (live.js) — só aparece em disputa de pênaltis */
+.pens-board { margin: var(--sp-2) 0 0; padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-md); display: grid; gap: 4px; }
+.pens-title { display: flex; align-items: center; gap: 6px; color: var(--text-1);
+  font-size: var(--fs-xs); font-weight: 700; }
+.pens-row { display: flex; align-items: center; gap: 8px; }
+.pens-team { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: var(--text-1); font-size: var(--fs-sm); }
+.pens-score { color: var(--text-0); font-weight: 800; min-width: 16px;
+  text-align: center; }
+.pens-marks { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.pens-kick { font-size: var(--fs-xs); font-weight: 800; line-height: 1; }
+.pens-kick.scored { color: var(--success); }
+.pens-kick.missed { color: var(--red); }
+
+/* Pódio: indicador de empate na posição (leaderboard.js) */
+.podium-tie { font-size: var(--fs-xs); color: var(--text-2); margin-top: 2px; }
+
+/* Aba Jogos · subdivisão Encerrados: fundo do cartão por acerto (jogos.js) */
+.closed-sort { display: flex; align-items: center; gap: var(--sp-2);
+  margin: 0 0 var(--sp-3); flex-wrap: wrap; }
+.closed-sort-lbl { color: var(--text-2); font-size: var(--fs-xs); }
+.closed-sort .chip { padding: 6px 12px; }
+.closed-card.is-exact .match-card { background: var(--gold-soft); border-color: var(--gold); }
+.closed-card.is-right .match-card { background: var(--green-soft); border-color: var(--success); }
+.closed-card.is-wrong .match-card { background: var(--red-soft); border-color: var(--red); }
+.closed-card.is-nobet .match-card { background: var(--surface-2); }

@@ -435,3 +435,53 @@ compartilhados, não podem rodar em paralelo), com testes por agente. [USER pedi
   cor hardcoded (trava verde), seções intactas, `pos-badge` 100% removido; ≤300 LOC.
   Mount I010 segue truncando no bash — validado por /tmp + file tool. [TOOL]
 - NEXT [USER]: `git add -A && git commit -m "feat(ui): tabela sem rolagem + criticas (borda de zona, hierarquia, contraste); tema escuro padrao" && git push origin master`. Deploy Cloud Run.
+
+## Rodada 16 — 9 features + reorg de agentes (2026-06-19)
+[USER] pediu: reescrever instruções de agentes num único .md + executar em loop.
+- `PLANO_RODADA16.md` = ÚNICA fonte de instruções p/ agentes (Contratos §1, Agente 0
+  tests-first, Agentes 1–10, loop/DoD). `AGENTS.md` e `PLAN_RODADA11.md` APAGADOS;
+  `TESTPLAN.md` e `frontend/DESIGN_SYSTEM.md` reescritos SEM instruções de agente. [CODE]
+- D020 ACTIVE (supersede D005): mata-mata pontua pelo placar do FIM DA PRORROGAÇÃO
+  (antes dos pênaltis); pênaltis descartados (só definem o vencedor). [USER]
+- D021 ACTIVE: schema v4 — matches.period/stoppage/home_pens/away_pens/pens_log
+  (migração idempotente). provider `_score_pair`=fullTime; parse extrai period/pens.
+- BACKEND (Agentes 1–4) COMPLETO + VERDE: **184 testes core OK** (160 + 24 novos).
+  H (scoring ET) · C (kickoff auto: poller idle 5min + PRE_WINDOW 30min + sync) ·
+  B-dados (period/pens nos payloads matches/live) · D-back (mark_qualifying_thirds +
+  third_qualifying) · E-back (predicted_bracket_payload, `predicted` por lado) ·
+  F (ranking densa 1,1,1,2). /api/bracket agora devolve o preditivo.
+- I011 (=I010, pior): o mount virtiofs serve TRUNCADO todo arquivo EDITADO nesta sessão
+  (cat/cp/python leem cortado). File tool = VERDADE (disco). Verificação feita
+  reconstruindo os 15 arquivos editados via sidecars `_r16_*.py` (arquivo NOVO propaga
+  ok) em /tmp/bk3 → 184 OK; sidecars apagados. `pytest tests/api` só roda no gate Docker.
+- FRONTEND (Agentes 5–9) COMPLETO + VERDE: **61 testes node OK**, node --check limpo.
+  A (tema escuro default + reset único `theme_reset`) · B (relógio `liveClock`
+  45+X/90+X/prorrogação/pênaltis + mini-placar `pensBoard`) · D-front (tabela:
+  amarelo só nos 3ºs que passam, vermelho nos demais via `zoneFor`) · E-front
+  (mata-mata preditivo: banner + chip "prev." + lado projetado) · F+G (pódio por
+  POSIÇÃO via `podiumSlots`: empate em 2º = 2 pratas, 0 bronze; ranking denso) ·
+  I (aba JOGOS unificando Jogos+Ao Vivo+Apostas: subdivisões Futuros/Ao vivo/
+  Encerrados, filtro por fase, ordenação, fundo verde/dourado/vermelho;
+  "Como Jogar" movido p/ cá em `howtoplay.js`).
+- D022 ACTIVE: rotas `ao-vivo`/`apostas` → redirect p/ `jogos` (links antigos seguem ok);
+  nav = Tabela · Mata-mata · Jogos · Ranking. `mybets.js` e `renderMatches` ficam
+  órfãos (mas `matchCard`/`liveContent` são reusados); não removidos p/ não arriscar.
+- Verificação Rodada 16 [TOOL]: core **184 OK**; node:test **61 OK**; node --check limpo;
+  CSS novo 100% via token; arquivos novos ≤300 LOC. Reconstrução via sidecars `_r16_*`
+  em /tmp (I011) p/ furar o mount truncado; sidecars apagados. Visual nos 2 temas: conferir no deploy.
+- State: TODAS as 9 features entregues e VERDES nos testes automatizáveis (core + node).
+- NEXT [USER]: `git add -A && git commit -m "feat(r16): scoring ET, sync auto, 3os/mata-mata preditivos, ranking denso/podio, tema escuro, aba Jogos unificada" && git push origin master`
+  (deploy Cloud Run); `docker build .` local roda o gate `pytest tests/api`. Conferir
+  visual nos 2 temas após subir.
+
+### Rodada 16 — I012: horário "voltava" pro hardcoded (2026-06-19)
+[USER] mostrou: API paga TEM o horário novo (BRA×HAI J29 = 21:30) mas o site mostra
+22:00. Causa-raiz (NÃO era a cadência do poller): `main.py` roda `seed()` a CADA boot
+e `matches.upsert_fixture` reescrevia `kickoff_utc = excluded` no ON CONFLICT → todo
+cold start do Cloud Run revertia o horário pro hardcoded de `fixtures.txt`
+(J29 = 2026-06-20T01:00Z = 22:00 BRT). Placar atualizava (seed não toca placar); só o
+horário voltava. FIX: `upsert_fixture` NÃO atualiza mais `kickoff_utc` no ON CONFLICT
+(grava só no 1º INSERT; provider/admin donos depois). +`test_reseed_kickoff` (2 testes).
+Core agora **186 OK**. Cadência (idle 5min/PRE 30min) segue válida, mas ESTE era o motivo
+do "22h fixo". Pós-deploy, o poller corrige o J29 p/ 21:30 em ~5min e NÃO reverte mais.
+[CODE db/repos/matches.py] [TOOL]

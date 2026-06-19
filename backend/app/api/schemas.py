@@ -55,3 +55,7 @@ class AdminScoreIn(BaseModel):
 
 class AdminResetPasswordIn(BaseModel):
     new_password: str = Field(max_length=128)
+
+
+class AdminKickoffIn(BaseModel):
+    kickoff_utc: str = Field(max_length=35, description="ISO 8601 com fuso, ex: 2026-06-20T18:00:00Z")

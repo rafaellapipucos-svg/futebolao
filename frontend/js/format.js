@@ -73,6 +73,36 @@ export function liveMinute(kickoffIso, serverMinute = null, nowMs = Date.now()) 
   return 'AO VIVO';
 }
 
+// "base+X" quando o relógio passa do fim de um tempo (acréscimos); senão o
+// minuto corrente. base = 45 (1º T), 90 (2º T), 105 (1º T prorrog.), 120 (2º T).
+function _periodPlus(base, minute, stoppage) {
+  const over = (minute != null && minute > base)
+    ? minute - base
+    : (typeof stoppage === 'number' && stoppage > 0 ? stoppage : 0);
+  if (over > 0) return `${base}+${over}'`;
+  return `${minute != null ? minute : base}'`;
+}
+
+// Relógio do jogo AO VIVO ciente da FASE (period do servidor): 1º tempo "45+X",
+// 2º tempo "90+X", prorrogação "105+X"/"120+X" e "Pênaltis". Sem period (sem
+// provider), cai na estimativa por relógio (ancorada no kickoff REAL, que o
+// poller mantém atualizado). Puro/testável.
+export function liveClock(match, nowMs = Date.now()) {
+  if (!match || match.status !== 'live') return '';
+  const { period, minute, stoppage, kickoff_utc } = match;
+  switch (period) {
+    case '1H': return _periodPlus(45, minute, stoppage);
+    case 'HT': return 'Intervalo';
+    case '2H': return _periodPlus(90, minute, stoppage);
+    case 'ET1': return _periodPlus(105, minute, stoppage);
+    case 'ET_HT': return 'Intervalo da prorrogação';
+    case 'ET2': return _periodPlus(120, minute, stoppage);
+    case 'PENS': return 'Pênaltis';
+    case 'FT': return '';
+    default: return liveMinute(kickoff_utc, minute, nowMs);
+  }
+}
+
 export function statusLabel(status) {
   return { scheduled: 'Agendado', live: 'Ao vivo', finished: 'Encerrado' }[status] || status;
 }

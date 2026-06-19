@@ -69,13 +69,28 @@ def team_code(team: Optional[Dict]) -> Optional[str]:
 
 
 def _score_pair(score: Dict) -> tuple:
-    """Placar dos 90 minutos: regularTime quando existir (mata-mata com
-    prorrogação), senão fullTime."""
-    regular = score.get("regularTime") or {}
+    """Placar que VALE para a aposta (Rodada 16): o do FIM DA PRORROGAÇÃO,
+    antes dos pênaltis = `fullTime` (já inclui a prorrogação). Em jogo decidido
+    no tempo normal, fullTime == placar dos 90min. Pênaltis ficam em `penalties`."""
     full = score.get("fullTime") or {}
-    home = regular.get("home") if regular.get("home") is not None else full.get("home")
-    away = regular.get("away") if regular.get("away") is not None else full.get("away")
-    return home, away
+    return full.get("home"), full.get("away")
+
+
+def _derive_period(
+    raw_status: str, duration: Optional[str], minute: Optional[int]
+) -> Optional[str]:
+    """Fase do relógio (heurística sobre status+duration+minuto da football-data)."""
+    if raw_status in ("FINISHED", "AWARDED"):
+        return "FT"
+    if raw_status == "PAUSED":
+        return "ET_HT" if duration == "EXTRA_TIME" else "HT"
+    if raw_status in ("IN_PLAY", "SUSPENDED"):
+        if duration == "PENALTY_SHOOTOUT":
+            return "PENS"
+        if duration == "EXTRA_TIME":
+            return "ET2" if (minute is not None and minute > 105) else "ET1"
+        return "2H" if (minute is not None and minute > 45) else "1H"
+    return None
 
 
 def parse_match(raw: Dict) -> ScoreUpdate:
@@ -94,6 +109,9 @@ def parse_match(raw: Dict) -> ScoreUpdate:
     if kickoff.tzinfo is None:
         kickoff = kickoff.replace(tzinfo=timezone.utc)
     minute = raw.get("minute")
+    minute = minute if isinstance(minute, int) else None
+    pens = score.get("penalties") or {}
+    home_pens, away_pens = pens.get("home"), pens.get("away")
     return ScoreUpdate(
         external_id=str(raw["id"]),
         kickoff_utc=kickoff,
@@ -102,8 +120,11 @@ def parse_match(raw: Dict) -> ScoreUpdate:
         status=status,
         home_score=home_score if isinstance(home_score, int) else None,
         away_score=away_score if isinstance(away_score, int) else None,
-        minute=minute if isinstance(minute, int) else None,
+        minute=minute,
         winner_code=winner_code,
+        period=_derive_period(raw.get("status", ""), score.get("duration"), minute),
+        home_pens=home_pens if isinstance(home_pens, int) else None,
+        away_pens=away_pens if isinstance(away_pens, int) else None,
     )
 
 

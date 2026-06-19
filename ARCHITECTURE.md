@@ -55,7 +55,7 @@ suite `pytest` que roda como **gate no build do Docker** e na máquina do dev.
 
 ```
 futebolão/
-├── ARCHITECTURE.md / AGENTS.md / TESTPLAN.md / GOALS.md / REVIEW.md / CONTINUITY.md
+├── ARCHITECTURE.md / PLANO_RODADA16.md / TESTPLAN.md / GOALS.md / REVIEW.md / CONTINUITY.md
 ├── README.md            # setup, deploy Fly/Railway, env vars, comandos
 ├── .env.example         # todas as envs documentadas
 ├── Dockerfile           # multi-stage: test-gate (pytest) → runtime
@@ -167,7 +167,8 @@ Pontos **nunca são armazenados** — sempre derivados (scoring é determinísti
 ## 6. Regras de negócio (autoritativas no servidor)
 
 - Pontos: resultado certo = 1; cravada = 3 (1+2). Multiplicador: GROUP×1, R32×2, R16×3,
-  QF×4, SF×5, THIRD×5, FINAL×10. Mata-mata: vale o placar dos 90min (empate é válido).
+  QF×4, SF×5, THIRD×5, FINAL×10. Mata-mata: vale o placar ao fim da prorrogação, antes
+  dos pênaltis (empate é válido; pênaltis só definem quem avança).
 - Trava: `PUT /api/bets/{id}` recusa (409) se `now>=kickoff` ∨ `status≠scheduled` ∨ times
   indefinidos. Verificação dentro da mesma transação do upsert. Scoring ignora apostas
   com `updated_at >= kickoff` (defesa em profundidade).

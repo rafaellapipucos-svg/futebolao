@@ -14,10 +14,18 @@ function clinchMark(row) {
   return null;
 }
 
+// Zona de classificação (Rodada 16, feature D): 1º–2º = vaga direta (verde);
+// 3º que está entre os 8 melhores 3ºs = repescagem (amarelo/dourado); 3º fora do
+// corte + 4º = não se classificaria (vermelho). Pura/testável.
+export function zoneFor(row) {
+  if (row.position <= 2) return 'row-q';
+  if (row.position === 3 && row.third_qualifying) return 'row-t';
+  return 'row-out';
+}
+
 function standingRow(row) {
-  // Zona indicada SÓ pela borda esquerda colorida (sem fundo de linha nem
-  // pílula): 1º–2º = vaga direta (verde) · 3º = repescagem (dourado) · 4º neutro.
-  const zone = row.position <= 2 ? 'row-q' : row.position === 3 ? 'row-t' : 'row-out';
+  // Zona indicada SÓ pela borda esquerda colorida (sem fundo de linha nem pílula).
+  const zone = zoneFor(row);
   const tr = h('tr', { class: `${zone}${row.live ? ' row-live' : ''}`.trim() });
   const name = h('td', { class: 'tname' },
     h('span', { class: 'tname-wrap' },
@@ -85,8 +93,9 @@ export function renderDashboard(store) {
     content,
     h('div', { class: 'legend' },
       h('span', {}, h('span', { class: 'bar q' }), '1º–2º: vaga direta'),
-      h('span', {}, h('span', { class: 'bar t' }), '3º: concorre entre os 8 melhores'),
-      h('span', {}, 'Pts pulsando = placar parcial · ✓ vaga garantida · * empate técnico'),
+      h('span', {}, h('span', { class: 'bar t' }), '3º que passaria (8 melhores)'),
+      h('span', {}, h('span', { class: 'bar out' }), 'não se classificaria'),
+      h('span', {}, 'Pts pulsando = parcial · ✓ vaga garantida · * empate técnico'),
     ),
   );
 }

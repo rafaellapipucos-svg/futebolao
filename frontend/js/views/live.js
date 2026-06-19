@@ -2,8 +2,8 @@
 // publicos de todos os jogadores (revelados a partir do apito). Clicar num
 // jogador abre o perfil publico.
 import { ensureData } from '../data.js';
-import { liveMinute } from '../format.js';
-import { avatarEl, emptyState, flagContent, h, skeletonList } from '../ui.js';
+import { liveClock } from '../format.js';
+import { avatarEl, emptyState, flagContent, h, icon, skeletonList } from '../ui.js';
 import { openProfile } from './profile_modal.js';
 
 // Acento-insensível para desempate alfabético estável ("Ávila" ~ "Avila").
@@ -71,6 +71,48 @@ function bettor(b) {
   );
 }
 
+// Mini-placar de pênaltis (Rodada 16): pens_log = JSON [["home",true],...].
+// Inválido/vazio ⇒ [] (mostra só o tally). Puro/testável.
+export function parsePensLog(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) {
+    console.warn('pens_log inválido', err);
+    return [];
+  }
+}
+
+function sideName(side) {
+  if (!side) return '';
+  return side.team ? side.team.name : (side.label || '');
+}
+
+// Mostrado SÓ quando o jogo foi/está nos pênaltis (tally definido ou period PENS).
+function pensBoard(m) {
+  if (m.home_pens == null && m.away_pens == null && m.period !== 'PENS') return null;
+  const log = parsePensLog(m.pens_log);
+  const marks = (team) => {
+    const kicks = log.filter((k) => Array.isArray(k) && k[0] === team);
+    if (!kicks.length) return null;
+    return h('span', { class: 'pens-marks' },
+      kicks.map((k) => h('span', {
+        class: `pens-kick ${k[1] ? 'scored' : 'missed'}`,
+        title: k[1] ? 'converteu' : 'perdeu', 'aria-hidden': 'true',
+      }, k[1] ? '✓' : '✗')));
+  };
+  const row = (side, pens, team) => h('div', { class: 'pens-row' },
+    h('span', { class: 'pens-team', title: sideName(side) }, sideName(side)),
+    h('b', { class: 'pens-score tnum' }, String(pens ?? 0)),
+    marks(team));
+  return h('div', { class: 'pens-board' },
+    h('div', { class: 'pens-title' }, icon('target', 14), 'Pênaltis'),
+    row(m.home, m.home_pens, 'home'),
+    row(m.away, m.away_pens, 'away'),
+  );
+}
+
 function liveMatch(m) {
   return h('div', { class: 'glass live-card' },
     h('div', { class: 'live-head' },
@@ -78,8 +120,9 @@ function liveMatch(m) {
       h('div', { class: 'live-score' },
         h('b', { class: 'tnum' }, `${m.home_score ?? 0} × ${m.away_score ?? 0}`),
         h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }),
-          liveMinute(m.kickoff_utc, m.minute))),
+          liveClock(m))),
       teamSide(m.away, true)),
+    pensBoard(m),
     h('div', { class: 'live-bettors' },
       m.bets.length
         ? sortBettors(m.bets).map(bettor)
@@ -87,19 +130,22 @@ function liveMatch(m) {
   );
 }
 
-export function renderLive(store) {
+// Conteúdo da seção "ao vivo" (sem o cabeçalho da página) — reusado IGUAL na
+// subdivisão "Ao vivo" da aba Jogos (Rodada 16). Garante que fique idêntico.
+export function liveContent(store) {
   const data = ensureData(store, 'live');
-  let content;
-  if (data === null) {
-    content = skeletonList(2, 170);
-  } else if (data.error) {
-    content = emptyState('bolt', 'Não consegui carregar os jogos ao vivo.', data.error);
-  } else if (!data.matches.length) {
-    content = emptyState('ball', 'Nenhum jogo ao vivo agora.',
-      'Volte na hora dos jogos para ver os palpites de todo mundo em tempo real.');
-  } else {
-    content = h('div', { class: 'live-grid' }, data.matches.map(liveMatch));
+  if (data === null) return skeletonList(2, 170);
+  if (data.error) {
+    return emptyState('bolt', 'Não consegui carregar os jogos ao vivo.', data.error);
   }
+  if (!data.matches.length) {
+    return emptyState('ball', 'Nenhum jogo ao vivo agora.',
+      'Volte na hora dos jogos para ver os palpites de todo mundo em tempo real.');
+  }
+  return h('div', { class: 'live-grid' }, data.matches.map(liveMatch));
+}
+
+export function renderLive(store) {
   return h('div', { class: 'page' },
     h('div', { class: 'page-head' },
       h('div', {},
@@ -107,6 +153,6 @@ export function renderLive(store) {
         h('p', { class: 'sub' }, 'Os palpites de todo mundo, revelados a partir do apito.'),
       ),
     ),
-    content,
+    liveContent(store),
   );
 }

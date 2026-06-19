@@ -63,8 +63,9 @@
 
 /* Zona de classificação SÓ pela borda esquerda (sem fundo de linha nem pílula:
    remove a redundância e o problema de contraste do "3" dourado). */
-tr.row-q td.tname { border-left-color: var(--success); }
-tr.row-t td.tname { border-left-color: var(--gold); }
+tr.row-q td.tname { border-left-color: var(--success); }     /* 1º–2º: vaga direta */
+tr.row-t td.tname { border-left-color: var(--gold); }        /* 3º que se classifica */
+tr.row-out td.tname { border-left-color: var(--red); }       /* não se classificaria */
 /* Ao vivo: só o Pts pulsa (sinal sutil, sem pintar a linha inteira). */
 tr.row-live .pts { color: var(--live); animation: pulse 1.6s ease-in-out infinite; }
 
@@ -75,6 +76,7 @@ tr.row-live .pts { color: var(--live); animation: pulse 1.6s ease-in-out infinit
   margin-right: 6px; vertical-align: middle; }
 .legend .bar.q { background: var(--success); }
 .legend .bar.t { background: var(--gold); }
+.legend .bar.out { background: var(--red); }
 @media (min-width: 880px) { .group-card { padding: var(--sp-4) var(--sp-5); } }
 
 /* ---- Bracket: estilos canônicos na seção "Mata-mata (Agente 5)" no fim ---- */

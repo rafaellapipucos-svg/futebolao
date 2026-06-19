@@ -30,6 +30,11 @@ def to_entity(row: Any) -> Match:
         winner_team_id=row["winner_team_id"],
         manual_lock=bool(row["manual_lock"]),
         external_id=row["external_id"],
+        period=row["period"],
+        stoppage=row["stoppage"],
+        home_pens=row["home_pens"],
+        away_pens=row["away_pens"],
+        pens_log=row["pens_log"],
     )
 
 
@@ -45,13 +50,16 @@ def upsert_fixture(
     home_team_id: Optional[int],
     away_team_id: Optional[int],
 ) -> None:
-    """Seed idempotente: nunca toca placar/status/apostas existentes."""
+    """Seed idempotente: nunca toca placar/status/apostas NEM horário existentes.
+    O kickoff é gravado só no 1º INSERT; depois vira responsabilidade do provider/
+    admin. Re-seed (roda a cada boot) NÃO pode reverter um horário já atualizado —
+    senão o jogo "volta" pro horário hardcoded do fixtures.txt (Rodada 16, I012)."""
     conn.execute(
         "INSERT INTO matches (id, stage, group_letter, kickoff_utc, venue, "
         "home_source, away_source, home_team_id, away_team_id, updated_at) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
         "ON CONFLICT(id) DO UPDATE SET stage = excluded.stage, "
-        "group_letter = excluded.group_letter, kickoff_utc = excluded.kickoff_utc, "
+        "group_letter = excluded.group_letter, "
         "venue = excluded.venue, home_source = excluded.home_source, "
         "away_source = excluded.away_source",
         (
@@ -79,19 +87,27 @@ def set_score(
     status: str,
     minute: Optional[int] = None,
     winner_team_id: Optional[int] = None,
+    period: Optional[str] = None,
+    stoppage: Optional[int] = None,
+    home_pens: Optional[int] = None,
+    away_pens: Optional[int] = None,
+    pens_log: Optional[str] = None,
 ) -> None:
     conn.execute(
         "UPDATE matches SET home_score = ?, away_score = ?, status = ?, minute = ?, "
-        "winner_team_id = ?, updated_at = ? WHERE id = ?",
-        (home_score, away_score, status, minute, winner_team_id, _now(), match_id),
+        "winner_team_id = ?, period = ?, stoppage = ?, home_pens = ?, away_pens = ?, "
+        "pens_log = ?, updated_at = ? WHERE id = ?",
+        (home_score, away_score, status, minute, winner_team_id, period, stoppage,
+         home_pens, away_pens, pens_log, _now(), match_id),
     )
 
 
 def reset_match(conn: Db, match_id: int) -> None:
     conn.execute(
         "UPDATE matches SET home_score = NULL, away_score = NULL, "
-        "status = 'scheduled', minute = NULL, winner_team_id = NULL, updated_at = ? "
-        "WHERE id = ?",
+        "status = 'scheduled', minute = NULL, winner_team_id = NULL, period = NULL, "
+        "stoppage = NULL, home_pens = NULL, away_pens = NULL, pens_log = NULL, "
+        "updated_at = ? WHERE id = ?",
         (_now(), match_id),
     )
 
@@ -113,6 +129,13 @@ def set_manual_lock(conn: Db, match_id: int, lock: bool) -> None:
     conn.execute(
         "UPDATE matches SET manual_lock = ?, updated_at = ? WHERE id = ?",
         (int(lock), _now(), match_id),
+    )
+
+
+def set_kickoff(conn: Db, match_id: int, kickoff_utc: str) -> None:
+    conn.execute(
+        "UPDATE matches SET kickoff_utc = ?, updated_at = ? WHERE id = ?",
+        (kickoff_utc, _now(), match_id),
     )
 
 

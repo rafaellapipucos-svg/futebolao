@@ -25,10 +25,13 @@ class GroupState:
     finished: bool
     rows: List[Row]  # ordem final (se finished) ou corrente
     outlook: Dict[int, clinch_mod.Outlook]
+    predictive: bool = False  # True: projeta posições pela ordem ATUAL da tabela
 
     def position_team(self, pos: int) -> Optional[int]:
         if self.finished:
             return self.rows[pos - 1].team_id
+        if self.predictive:
+            return self.rows[pos - 1].team_id if 0 <= pos - 1 < len(self.rows) else None
         for t, o in self.outlook.items():
             if o.guaranteed_position == pos:
                 return t
@@ -50,6 +53,7 @@ def build_context(
     teams: Dict[int, "object"],  # {team_id: Team}
     matches: List[Match],
     third_assignment: Optional[Dict[str, int]] = None,
+    predictive: bool = False,
 ) -> BracketContext:
     by_group: Dict[str, Dict[int, str]] = {g: {} for g in GROUPS}
     team_by_code: Dict[str, int] = {}
@@ -62,9 +66,11 @@ def build_context(
         ids = by_group[g]
         mine = [m for m in group_matches if m.group == g]
         finished = clinch_mod.group_finished(ids.keys(), mine)
-        rows = compute_group(ids, mine, include_live=False)
+        rows = compute_group(ids, mine, include_live=predictive)
         outlook = clinch_mod.analyze(ids.keys(), mine)
-        groups[g] = GroupState(finished=finished, rows=rows, outlook=outlook)
+        groups[g] = GroupState(
+            finished=finished, rows=rows, outlook=outlook, predictive=predictive
+        )
     return BracketContext(
         team_by_code=team_by_code,
         groups=groups,

@@ -18,8 +18,12 @@ from ..db.connection import Db
 log = logging.getLogger("bolao.poller")
 
 ACTIVE_INTERVAL = 60.0
-IDLE_INTERVAL = 15 * 60.0
-PRE_WINDOW = timedelta(minutes=10)
+# Ocioso = 5min (free tier: 10 req/min sobra). Curto o suficiente p/ capturar
+# mudança de horário/fixture SEM input manual do admin (feature C, Rodada 16).
+IDLE_INTERVAL = 5 * 60.0
+# Janela de pré-jogo larga: pega jogo antecipado (ex.: 22:00 -> 21:30) mesmo se o
+# kickoff salvo ainda estiver desatualizado, virando poll ativo na hora certa.
+PRE_WINDOW = timedelta(minutes=30)
 POST_WINDOW = timedelta(hours=3, minutes=30)
 
 

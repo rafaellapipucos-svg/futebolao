@@ -4,6 +4,12 @@
   <script>
     (function () {
       try {
+        // RESET único (Rodada 16): zera a preferência antiga 1x p/ o escuro
+        // virar padrão de todos; só fica claro quem escolher claro depois disso.
+        if (localStorage.getItem('theme_reset') !== 'r16-dark-default') {
+          localStorage.removeItem('theme');
+          localStorage.setItem('theme_reset', 'r16-dark-default');
+        }
         var t = localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', t);
       } catch (e) {

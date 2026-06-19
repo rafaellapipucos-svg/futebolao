@@ -11,20 +11,16 @@ import { renderAdmin } from './views/admin.js';
 import { renderBracket } from './views/bracket.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderLeaderboard } from './views/leaderboard.js';
-import { renderLive } from './views/live.js';
 import { renderLogin } from './views/login.js';
-import { renderMatches } from './views/matches.js';
-import { renderMyBets } from './views/mybets.js';
+import { renderJogos } from './views/jogos.js';
 import { renderProfile } from './views/profile.js';
 
 const VIEWS = {
   login: { render: renderLogin, shell: false },
   dashboard: { render: renderDashboard, shell: true },
-  jogos: { render: renderMatches, shell: true },
   chaveamento: { render: renderBracket, shell: true },
-  'ao-vivo': { render: renderLive, shell: true },
+  jogos: { render: renderJogos, shell: true },
   ranking: { render: renderLeaderboard, shell: true },
-  apostas: { render: renderMyBets, shell: true },
   perfil: { render: renderProfile, shell: true },
   admin: { render: renderAdmin, shell: true },
 };
@@ -51,7 +47,7 @@ function renderApp(state) {
 const LIVE_KEYS = ['matches', 'standings', 'leaderboard', 'bracket', 'live'];
 const ROUTE_DATA_KEY = {
   dashboard: 'standings', jogos: 'matches', chaveamento: 'bracket',
-  'ao-vivo': 'live', ranking: 'leaderboard', apostas: 'matches',
+  ranking: 'leaderboard',
 };
 let liveVersion = 0;
 

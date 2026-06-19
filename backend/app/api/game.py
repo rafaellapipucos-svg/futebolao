@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..services.bracket_svc import bracket_payload
+from ..services.bracket_svc import predicted_bracket_payload
 from ..services.leaderboard import leaderboard
 from ..services.matches import list_matches
 from ..services.public_bets import live_matches, match_bets_public
@@ -74,4 +74,4 @@ def live(conn: Db = Depends(get_db), user=Depends(get_current_user)):
 def get_bracket(
     conn: Db = Depends(get_db), user=Depends(get_current_user)
 ):
-    return {"matches": bracket_payload(conn)}
+    return {"matches": predicted_bracket_payload(conn)}

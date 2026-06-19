@@ -100,3 +100,76 @@ def bracket_payload(conn: Db) -> List[Dict]:
             "winner_team_id": m.winner_id(),
         })
     return out
+
+
+def _provisional_third_assignment(conn: Db) -> Optional[Dict[str, int]]:
+    """Annex C PROVISÓRIA: usa a ordem ATUAL da tabela (sem exigir grupos
+    encerrados) para projetar os 8 melhores 3ºs. Rodada 16 (feature E)."""
+    teams = teams_repo.all_teams(conn)
+    group_matches = [
+        m for m in matches_repo.all_matches(conn) if m.stage == Stage.GROUP
+    ]
+    third_rows, third_team = {}, {}
+    for g in GROUPS:
+        ids = {tid: t.code for tid, t in teams.items() if t.group == g}
+        mine = [m for m in group_matches if m.group == g]
+        rows = compute_group(ids, mine, include_live=True)
+        third_rows[g] = rows[2]
+        third_team[g] = rows[2].team_id
+    return allocate(_annex(), third_team, qualified_thirds(third_rows))
+
+
+def predicted_bracket_payload(conn: Db) -> List[Dict]:
+    """Como bracket_payload, mas PROJETA os confrontos pela tabela atual.
+    `predicted=true` no lado/confronto que ainda é só previsão (não garantido).
+    Vencedor real de jogo encerrado propaga ao slot seguinte mesmo com adversário
+    indefinido (resolve_all resolve cada lado de forma independente)."""
+    teams = teams_repo.all_teams(conn)
+    all_matches = matches_repo.all_matches(conn)
+    real = resolve_all(build_context(
+        teams, all_matches, third_assignment=_third_assignment(conn)))
+    pred = resolve_all(build_context(
+        teams, all_matches, third_assignment=_provisional_third_assignment(conn),
+        predictive=True))
+
+    def side(real_id: Optional[int], pred_id: Optional[int], source: str) -> Dict:
+        definite = real_id is not None
+        team_id = real_id if definite else pred_id
+        predicted = (not definite) and pred_id is not None
+        if team_id is not None and team_id in teams:
+            t = teams[team_id]
+            return {"team": {"id": t.id, "code": t.code, "name": t.name,
+                             "flag": t.flag}, "label": None, "predicted": predicted}
+        return {"team": None, "label": source_label(source), "predicted": False}
+
+    out: List[Dict] = []
+    for m in all_matches:
+        if m.stage == Stage.GROUP:
+            continue
+        rh, ra = real.get(m.id, (None, None))
+        ph, pa = pred.get(m.id, (None, None))
+        home = side(rh, ph, m.home_source)
+        away = side(ra, pa, m.away_source)
+        out.append({
+            "id": m.id,
+            "stage": m.stage.value,
+            "stage_label": STAGE_LABELS_PT[m.stage],
+            "kickoff_utc": m.kickoff_utc.isoformat(),
+            "venue": m.venue,
+            "status": m.status.value,
+            "minute": m.minute,
+            "period": m.period,
+            "stoppage": m.stoppage,
+            "home_source": m.home_source,
+            "away_source": m.away_source,
+            "home": home,
+            "away": away,
+            "home_score": m.home_score,
+            "away_score": m.away_score,
+            "home_pens": m.home_pens,
+            "away_pens": m.away_pens,
+            "pens_log": m.pens_log,
+            "winner_team_id": m.winner_id(),
+            "predicted": home["predicted"] or away["predicted"],
+        })
+    return out

@@ -2,13 +2,22 @@
 // A aplicação inicial (antes da 1ª pintura) é feita por um script inline no
 // index.html para evitar "flash" de tema errado.
 const KEY = 'theme';
+const RESET_KEY = 'theme_reset';
+const RESET_TOKEN = 'r16-dark-default';
 
-function read() {
+// Pura/testável: resolve o tema a partir de um storage, aplicando o RESET único
+// (Rodada 16): se o reset ainda não rodou, zera a preferência antiga e marca-o.
+// Resultado: todos voltam ao ESCURO neste deploy; só fica claro quem escolher
+// claro DEPOIS do reset.
+export function resolveTheme(storage) {
   try {
-    return localStorage.getItem(KEY);
+    if (storage.getItem(RESET_KEY) !== RESET_TOKEN) {
+      storage.removeItem(KEY);
+      storage.setItem(RESET_KEY, RESET_TOKEN);
+    }
+    return storage.getItem(KEY) === 'light' ? 'light' : 'dark';
   } catch (err) {
-    console.warn('theme: leitura do localStorage falhou', err);
-    return null;
+    return 'dark';
   }
 }
 
@@ -21,8 +30,12 @@ function write(value) {
 }
 
 export function getTheme() {
-  // Padrão = ESCURO; só fica claro se o usuário escolheu explicitamente.
-  return read() === 'light' ? 'light' : 'dark';
+  // Padrão = ESCURO; aplica o reset único e só fica claro por escolha explícita.
+  try {
+    return resolveTheme(localStorage);
+  } catch (err) {
+    return 'dark';
+  }
 }
 
 export function applyTheme(theme) {

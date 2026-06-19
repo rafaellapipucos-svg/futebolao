@@ -4,13 +4,13 @@ import { navigate } from './router.js';
 import { avatarEl, h, icon, toast } from './ui.js';
 import { getTheme, toggleTheme } from './theme.js';
 
+// Rodada 16: "Ao Vivo" e "Apostas" foram fundidas na aba "Jogos" (subdivisões).
+// Ordem: Tabela · Mata-mata · Jogos · Ranking.
 const NAV_ITEMS = [
   { route: 'dashboard', label: 'Tabela', icon: 'table' },
-  { route: 'jogos', label: 'Jogos', icon: 'ball' },
-  { route: 'ao-vivo', label: 'Ao Vivo', icon: 'live' },
   { route: 'chaveamento', label: 'Mata-mata', icon: 'bracket' },
+  { route: 'jogos', label: 'Jogos', icon: 'ball' },
   { route: 'ranking', label: 'Ranking', icon: 'trophy' },
-  { route: 'apostas', label: 'Apostas', icon: 'list' },
 ];
 
 function brandLogo() {

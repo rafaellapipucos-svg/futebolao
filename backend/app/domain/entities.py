@@ -45,6 +45,10 @@ class MatchStatus(str, Enum):
     FINISHED = "finished"
 
 
+# Fases do relógio ao vivo (coluna `period` de matches).
+LIVE_PERIODS = {"1H", "HT", "2H", "ET1", "ET_HT", "ET2", "PENS", "FT"}
+
+
 @dataclass(frozen=True)
 class Team:
     id: int
@@ -72,6 +76,11 @@ class Match:
     winner_team_id: Optional[int] = None  # mata-mata: vencedor (pênaltis etc.)
     manual_lock: bool = False
     external_id: Optional[str] = None
+    period: Optional[str] = None     # relógio ao vivo: 1H/HT/2H/ET1/ET_HT/ET2/PENS/FT
+    stoppage: Optional[int] = None   # acréscimos da fase atual (45+X, 90+X, ...)
+    home_pens: Optional[int] = None  # disputa de pênaltis (None se não houve)
+    away_pens: Optional[int] = None
+    pens_log: Optional[str] = None   # JSON chute-a-chute (opcional, p/ mini-placar)
 
     @property
     def has_score(self) -> bool:
@@ -85,11 +94,15 @@ class Match:
     def is_live(self) -> bool:
         return self.status == MatchStatus.LIVE
 
+    @property
+    def went_to_penalties(self) -> bool:
+        return self.home_pens is not None and self.away_pens is not None
+
     def winner_id(self) -> Optional[int]:
         """Vencedor do confronto (para propagação no bracket).
 
-        Placar dos 90min decide; empate em mata-mata exige winner_team_id
-        explícito (pênaltis/prorrogação informados por admin ou provider).
+        Placar do FIM DA PRORROGAÇÃO decide; empate exige winner_team_id
+        explícito (vencedor dos pênaltis, informado por admin ou provider).
         """
         if not self.is_finished or not self.has_score:
             return None

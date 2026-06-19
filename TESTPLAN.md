@@ -1,16 +1,22 @@
-# TESTPLAN — planejado ANTES da implementação
+# TESTPLAN — catálogo de testes do projeto (referência)
+
+> Documento de **referência** do que é testado e como. Não contém instruções para agentes.
+> Os testes da rodada atual são definidos em `PLANO_RODADA16.md` (§2, Agente 0) e escritos
+> antes da implementação (TDD).
 
 Convenções: testes core = `unittest` puro em `backend/tests/core/` (executam no sandbox,
 sem dependências externas). Testes api = `pytest` em `backend/tests/api/` (executam no
 build do Docker e localmente). Front = `node:test` em `frontend/tests/` + `node --check`.
 
-## §1 Domínio (Agente 1)
+## §1 Domínio
 
 **test_scoring.py**
 - Cravada em grupo (2x1 vs 2x1) = 3; resultado certo não exato (2x1 vs 3x1) = 1; erro = 0.
 - Empate cravado (1x1 vs 1x1) = 3; empate certo não exato (1x1 vs 2x2) = 1.
 - Multiplicadores: mesma cravada vale 6 em R32, 9 em R16, 12 em QF, 15 em SF/THIRD, 30 em FINAL.
 - Aposta inexistente/jogo sem placar → 0; pontos só com status finished (live = provisório sinalizado).
+- **Mata-mata (Rodada 16):** o placar que pontua é o do **fim da prorrogação** (antes dos
+  pênaltis); pênaltis são descartados; empate pós-prorrogação usa `winner_team_id`.
 
 **test_standings.py**
 - 3 vitórias = 9 pts; ordenação por pts > SG > GP.
@@ -32,16 +38,21 @@ build do Docker e localmente). Front = `node:test` em `frontend/tests/` + `node 
   1I∈{C,D,F,G,H} 1K∈{D,E,I,J,L} 1L∈{E,H,I,J,K}.
 - Lookup: combo "EFGHIJKL" → 1A:3E, 1B:3J, 1D:3I, 1E:3F, 1G:3H, 1I:3G, 1K:3L, 1L:3K (linha 1 oficial).
 - Ranking dos 3ºs: pts > SG > GP > código; melhores 8 selecionados.
+- **Preditivo (Rodada 16):** `mark_qualifying_thirds` escolhe os 8 melhores 3ºs com standings
+  parciais (mid-torneio), expondo `third_qualifying` por linha de 3º colocado.
 
 **test_bracket.py**
 - Slots 1A/2B resolvem com grupo encerrado; antes, resolvem se clinch garante posição exata.
 - Slot 3:ABCDF só resolve com os 12 grupos encerrados; usa Annex C.
-- W73 resolve quando jogo 73 finished (placar 90min decide… mata-mata empatado: vencedor
-  indefinido pelo placar ⇒ exige winner_team_id explícito do admin/provider; teste cobre).
+- W73 resolve quando jogo 73 finished (placar fim-da-prorrogação decide; mata-mata empatado:
+  vencedor indefinido pelo placar ⇒ exige winner_team_id explícito do admin/provider).
 - L101/L102 (3º lugar) resolvem com semis encerradas.
 - Cascata preditiva: grupos A..L todos encerrados + jogos 73..88 encerrados ⇒ R16 inteiro
   preenchido; QF/SF/Final permanecem com labels até decidíveis.
 - Estrutura: 16+8+4+2+1+1 nós; refs corretas (89=W74×W77 … 104=W101×W102).
+- **Preditivo (Rodada 16):** projeção do R32 a partir do ranking atual (`predicted=true`);
+  clinched/encerrado vira `predicted=false`; vencedor real propaga ao slot seguinte mesmo com
+  adversário TBD.
 
 **test_betlock.py**
 - now < kickoff ∧ scheduled ∧ times definidos ⇒ aberto.
@@ -59,7 +70,11 @@ build do Docker e localmente). Front = `node:test` em `frontend/tests/` + `node 
 - Sources do R32 conferem com tabela FIFA (73:2A×2B … 88:2D×2G); R16+ refs conferem.
 - Reseed é idempotente (não duplica, preserva placares/apostas existentes).
 
-## §2 Segurança & Auth (Agente 2)
+**test_schema_v4_migration.py (Rodada 16)**
+- DB v3 “na mão” migra e ganha `period/stoppage/home_pens/away_pens/pens_log`; idempotente;
+  `SCHEMA_VERSION==4`.
+
+## §2 Segurança & Auth
 
 **test_passwords.py**: hash≠senha; verify ok/fail; pepper diferente ⇒ fail; política
 (≥8 chars, rejeita só-dígitos e top-fracas tipo "12345678"); bytes longos (>72) ok via pré-hash.
@@ -76,7 +91,7 @@ admin via ADMIN_EMAILS.
 code, valida state, exige email_verified, cria/loga/vincula por google_sub; e-mail já
 existente com senha ⇒ vincula sem duplicar.
 
-## §3 Serviços (Agente 3)
+## §3 Serviços
 
 **test_betting_service.py**: upsert cria e edita antes do kickoff; 0..20 gols; trava: editar
 no/apos kickoff ⇒ BetLockedError (mesmo via chamada direta do serviço); aposta em jogo com
@@ -84,25 +99,33 @@ time indefinido ⇒ erro; minhas apostas separa futuras/encerradas com pontos.
 **test_leaderboard.py**: 3 users, mix de cravadas/resultados/erros em fases distintas ⇒
 totais, contadores e ordem exatos; jogo live altera parcial (flag live); cache invalida por
 data_version; empate ordena por cravadas > nome.
-**test_standings_svc.py**: agrega 12 grupos; live=true inclui parciais; flags clinch expostas.
+- **Densa (Rodada 16):** três empatados ⇒ posições `1,1,1,2` (não `1,1,1,4`).
+**test_standings_svc.py**: agrega 12 grupos; live=true inclui parciais; flags clinch expostas;
+**(Rodada 16)** `third_qualifying` nas linhas de 3º colocado.
 **test_results.py**: transições válidas (scheduled→live→finished; reabrir exige force admin);
 placar negativo/absurdo rejeitado; finished sem winner em mata-mata empatado ⇒ exige
-winner_team_id; bump data_version + publish.
+winner_team_id; bump data_version + publish; **(Rodada 16)** aceita `period/stoppage/
+home_pens/away_pens/pens_log`.
 **test_bracket_svc.py**: cenário integrado — simula copa inteira por resultados e confere
-propagação até a final (matchups determinísticos do cenário).
+propagação até a final (matchups determinísticos do cenário); **(Rodada 16)** payload
+preditivo com `predicted` por confronto.
 **test_avatars.py**: PNG válido ⇒ JPEG 256px sem EXIF; >2MB ⇒ erro; bytes não-imagem ⇒ erro;
 SVG/ZIP disfarçado ⇒ erro (Pillow verify).
 
-## §4 Providers & jobs (Agente 4)
+## §4 Providers & jobs
 
 **test_football_data.py**: parse fixture real-shape (IN_PLAY/PAUSED→live, FINISHED→finished,
 TIMED/SCHEDULED→scheduled); aliases ("Korea Republic"→KOR etc.); casa por external_id e,
 sem ele, por (kickoff±2h, par de codes); knockout: winner por fullTime+penalties.
+- **(Rodada 16):** extrai `period`/`stoppage`/`penalties`; `_score_pair` devolve o placar
+  **fim-da-prorrogação** (fullTime) para jogos com prorrogação.
 **test_sync.py**: aplica updates; manual_lock ⇒ ignora aquele jogo; nada muda ⇒ data_version
 estável (idempotente); mudança ⇒ bump+publish; placar regressivo da API com manual_lock=0 aplica.
+- **(Rodada 16):** provider reporta horário diferente (>60s) em jogo scheduled ⇒ kickoff
+  atualiza **sem input do admin** e bumpa data_version (SSE).
 **test_poller_window.py**: janela ativa se ∃ jogo scheduled/live com kickoff-5min ≤ now ≤ kickoff+3h.
 
-## §5 HTTP/pytest (Agente 5 — roda no Docker build/local)
+## §5 HTTP/pytest (roda no Docker build/local)
 
 Auth: register/login set-cookies (HttpOnly, SameSite=Lax, Secure se prod), me 401 sem cookie,
 refresh rotaciona, logout limpa+revoga, rate limit 429 no 6º login, register sem invite 403
@@ -114,23 +137,30 @@ Misc: headers de segurança presentes em todas as respostas; /api/health 200; SP
 serve index.html para rota desconhecida não-/api; avatar multipart 413/415/200; SSE responde
 text/event-stream com retry e primeiro evento {v}.
 
-## §6 Frontend (Agentes 6-7)
+## §6 Frontend
 
 node:test — **points.test.js** espelha §1 scoring (mesmos casos); **format.test.js** datas
-UTC→local, agrupar por dia, countdown; **router.test.js** parse/navegação/guard; **store.test.js**
-subscribe/notify/derived.
+UTC→local, agrupar por dia, countdown, **(Rodada 16)** `liveClock` (45+X/90+X/prorrogação/
+pênaltis); **router.test.js** parse/navegação/guard; **store.test.js** subscribe/notify/derived.
+- **(Rodada 16):** `theme.test.js` (reset + resolveTheme); `leaderboard.test.js` (`podiumSlots`
+  com empates); `jogos.test.js` (`closedCardClass`, ordenação, filtro de fase); `dashboard.test.js`
+  (`zoneFor`); `live.test.js` (`parsePensLog`, mini-placar); `bracket.test.js` (`predicted`).
 Estáticos: `node --check` em todos os .js; grep proibindo `innerHTML=` com variável (permitido
 apenas literais estáticos auditados), `eval(`, `document.write`, `dangerouslySetInnerHTML`-like.
 Smoke: servir frontend/ + checar 200 e content-type de index.html, css e cada módulo js.
 
 ## Mapa exigência → teste
-| Exigência do usuário | Cobertura |
+| Exigência | Cobertura |
 |---|---|
 | Pontuação 1/3 + multiplicadores | §1 scoring, §3 leaderboard, §6 points |
+| Mata-mata = fim da prorrogação | §1 scoring, §4 provider, §3 results |
 | Trava no apito (sem bypass) | §1 betlock, §3 betting, §5 bets 409 |
-| Tabela ao vivo estilo Google | §1 standings live, §3 standings_svc, §5 SSE |
+| Tabela ao vivo + 3ºs preditivos | §1 standings, §3 standings_svc, §5 SSE |
 | Bracket preditivo antecipado | §1 clinch+thirds+bracket, §3 bracket_svc |
-| Ranking com parciais | §3 leaderboard live |
+| Horário automático | §4 sync (kickoff) |
+| Relógio/prorrogação/pênaltis | §4 provider, §6 format/live |
+| Ranking denso + pódio com empate | §3 leaderboard, §6 leaderboard |
+| Tema escuro padrão + reset | §6 theme |
+| Aba Jogos unificada | §6 jogos |
 | SQLi/XSS/CSRF/rate/senhas | §1 repos estático, §2 inteiro, §5 headers/429/403, §6 greps |
 | OAuth Google + email/senha | §2 auth+oauth, §5 auth |
-| Perfil (foto/nome/senha) | §3 avatars, §2 change_password, §5 multipart |

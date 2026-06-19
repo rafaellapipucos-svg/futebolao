@@ -13,11 +13,11 @@ from ..db.schema import bump_data_version
 from ..domain.entities import MatchStatus
 from ..services.bracket_svc import persist_resolutions
 from ..services.live_bus import bus
-from ..services.results import ResultError, reset_match, set_score
+from ..services.results import ResultError, reset_match, set_score, update_kickoff
 from ..services.betting import BetValidationError, admin_set_bet
 from ..services.matches import list_matches
 from .deps import get_db, get_settings, rate_limit, require_admin, require_csrf
-from .schemas import AdminBetIn, AdminResetPasswordIn, AdminScoreIn
+from .schemas import AdminBetIn, AdminKickoffIn, AdminResetPasswordIn, AdminScoreIn
 from ..db.connection import Db
 
 router = APIRouter(

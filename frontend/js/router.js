@@ -32,6 +32,10 @@ export function resolveRoute(hash, user) {
   if (def.auth && !user) return { name: 'login', params: { next: parsed.name } };
   if (def.admin && !(user && user.is_admin)) return { name: 'dashboard', params: {} };
   if (parsed.name === 'login' && user) return { name: 'dashboard', params: {} };
+  // Rodada 16: Ao Vivo e Apostas foram fundidas na aba Jogos (não quebra links antigos).
+  if (parsed.name === 'ao-vivo' || parsed.name === 'apostas') {
+    return { name: 'jogos', params: parsed.params };
+  }
   return parsed;
 }
 

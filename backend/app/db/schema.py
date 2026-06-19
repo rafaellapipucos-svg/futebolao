@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .connection import Db
 
-SCHEMA_VERSION = 3  # v3: users.bio (descrição do perfil)
+SCHEMA_VERSION = 4  # v4: matches.period/stoppage/home_pens/away_pens/pens_log
 
 _DIALECT_TOKENS = {
     "sqlite": {
@@ -70,6 +70,11 @@ CREATE TABLE IF NOT EXISTS matches (
   winner_team_id BIGINT REFERENCES teams(id),
   manual_lock INTEGER NOT NULL DEFAULT 0,
   external_id TEXT,
+  period TEXT,
+  stoppage INTEGER,
+  home_pens INTEGER,
+  away_pens INTEGER,
+  pens_log TEXT,
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
@@ -108,7 +113,20 @@ def render_ddl(dialect: str) -> str:
 
 # PRAGMA não aceita parâmetro; whitelist literal (sem interpolação) p/ passar
 # o scanner anti-injeção de SQL.
-_TABLE_INFO = {"users": "PRAGMA table_info(users)"}
+_TABLE_INFO = {
+    "users": "PRAGMA table_info(users)",
+    "matches": "PRAGMA table_info(matches)",
+}
+
+# Colunas v4 de matches (relógio ao vivo + pênaltis). DDL literal (sem
+# interpolação) p/ passar o scanner anti-injeção.
+_MATCH_V4_COLUMNS = (
+    ("period", "ALTER TABLE matches ADD COLUMN period TEXT"),
+    ("stoppage", "ALTER TABLE matches ADD COLUMN stoppage INTEGER"),
+    ("home_pens", "ALTER TABLE matches ADD COLUMN home_pens INTEGER"),
+    ("away_pens", "ALTER TABLE matches ADD COLUMN away_pens INTEGER"),
+    ("pens_log", "ALTER TABLE matches ADD COLUMN pens_log TEXT"),
+)
 
 
 def _column_exists(db: Db, table: str, column: str) -> bool:
@@ -127,6 +145,9 @@ def _migrate(db: Db) -> None:
     """Migrações idempotentes p/ DBs já existentes (cross-dialeto)."""
     if not _column_exists(db, "users", "bio"):
         db.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+    for col, ddl in _MATCH_V4_COLUMNS:
+        if not _column_exists(db, "matches", col):
+            db.execute(ddl)
 
 
 def init_db(db: Db) -> None:

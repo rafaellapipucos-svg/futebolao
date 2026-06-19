@@ -82,11 +82,13 @@ def leaderboard(conn: Db, include_live: bool = True) -> List[Dict]:
     ]
     rows.sort(key=lambda r: (-r["total"], -r["exact_hits"], -r["result_hits"],
                              r["display_name"].lower()))
+    # Posição DENSA (1,1,1,2 — não 1,1,1,4): empates compartilham a posição e a
+    # próxima posição avança apenas +1 (Rodada 16, feature F).
     position, last_key = 0, None
-    for i, r in enumerate(rows, start=1):
+    for r in rows:
         key = (r["total"], r["exact_hits"], r["result_hits"])
         if key != last_key:
-            position = i
+            position += 1
             last_key = key
         r["position"] = position
     return rows

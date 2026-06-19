@@ -49,7 +49,7 @@ class TestFootballData(unittest.TestCase):
         self.assertIsNone(team_code(None))
         self.assertIsNone(team_code({}))
 
-    def test_mata_mata_90min_e_winner(self):
+    def test_mata_mata_penaltis_extrai_tally_e_winner(self):
         upd = parse_match(raw_match(
             status="FINISHED",
             score={
@@ -59,17 +59,20 @@ class TestFootballData(unittest.TestCase):
                 "penalties": {"home": 3, "away": 4},
             },
         ))
-        self.assertEqual((upd.home_score, upd.away_score), (1, 1))  # 90min
+        self.assertEqual((upd.home_score, upd.away_score), (1, 1))  # fim da prorrogação
+        self.assertEqual((upd.home_pens, upd.away_pens), (3, 4))
         self.assertEqual(upd.winner_code, "RSA")
 
-    def test_regular_time_preferido_sobre_fulltime(self):
+    def test_fulltime_pos_prorrogacao_e_o_que_vale(self):
+        # Rodada 16: o placar que pontua é o do FIM DA PRORROGAÇÃO (fullTime),
+        # não mais o dos 90min (regularTime).
         upd = parse_match(raw_match(
             status="FINISHED",
             score={"winner": "HOME_TEAM", "duration": "EXTRA_TIME",
                    "fullTime": {"home": 2, "away": 1},
                    "regularTime": {"home": 1, "away": 1}},
         ))
-        self.assertEqual((upd.home_score, upd.away_score), (1, 1))
+        self.assertEqual((upd.home_score, upd.away_score), (2, 1))
 
     def test_provider_fetch_com_http_fake(self):
         def fake_get(url, token):
