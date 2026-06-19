@@ -508,3 +508,26 @@ FIX: `getTheme()` agora LÊ o data-theme já aplicado (fonte única = a tela); +
 `initTheme()` no boot do main.js reaplica reset+tema (rede de segurança p/ cache).
 tokens.css: `:root`=claro, `:root[data-theme="dark"]`=escuro (default vem do inline/init).
 Verde: theme.test 4 OK + simulação dos cenários A–D. [CODE theme.js, main.js]
+
+### Rodada 16 — enxugar filtros da aba Jogos (2026-06-19)
+[USER] 3 fileiras de botão poluíam. Decisão: filtro de Fase vira DROPDOWN e só
+aparece nos Encerrados; ordenar vira botão ↕ (swap_vert; ícone `sort` novo em
+ui.js) à DIREITA; "Como Jogar" à direita também no celular. [CODE]
+- jogos.js: Futuros/Ao vivo SEM filtro de fase; closedView usa `phaseSelect`
+  (<select> "Fase") + `sortButton` (↕) em `.closed-controls` (space-between).
+  Removidos phaseFilter/sortToggle (pílulas) e o estado `futurePhase`.
+- Fix Como Jogar à esquerda no mobile: `.page-head` tem flex-wrap, e space-between
+  alinhava o botão à esquerda quando quebrava linha → `.page-head .howtoplay-btn
+  { margin-left:auto }` (classe nova no howToPlayButton).
+- CSS novo (views-extra) 100% via token; node:test **65 OK**; node --check jogos OK.
+- NOTA: Futuros ficou SEM filtro de fase (pedido do user). Reverter é trivial se quiser.
+
+### Rodada 16 — palpites de todos no jogo encerrado (2026-06-19)
+[USER] clicar num jogo encerrado deve mostrar os palpites de TODOS, mesma lógica de
+cores. FEITO: cartão encerrado vira clicável (role=button + Enter/Espaço) → modal
+`openMatchBets` (novo `js/views/match_bets_modal.js`) que busca `GET /api/matches/
+{id}/bets` (endpoint já existia, usado pelo Ao Vivo) e lista cada palpite colorido
+por acerto — reusa `outcomeClass` (hist-gold/green/red) + `.hist-item`/`.hist-list`;
+cada linha abre o perfil público. CSS novo em `css/match-bets.css` (+`<link>` no
+index.html) p/ não estourar os 300 LOC dos CSS existentes. Verde: node:test 65 OK;
+node --check ok. [CODE jogos.js, match_bets_modal.js, match-bets.css, index.html]

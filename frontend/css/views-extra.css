@@ -263,11 +263,24 @@
 /* Pódio: indicador de empate na posição (leaderboard.js) */
 .podium-tie { font-size: var(--fs-xs); color: var(--text-2); margin-top: 2px; }
 
-/* Aba Jogos · subdivisão Encerrados: fundo do cartão por acerto (jogos.js) */
-.closed-sort { display: flex; align-items: center; gap: var(--sp-2);
-  margin: 0 0 var(--sp-3); flex-wrap: wrap; }
-.closed-sort-lbl { color: var(--text-2); font-size: var(--fs-xs); }
-.closed-sort .chip { padding: 6px 12px; }
+/* Aba Jogos · Encerrados: filtro de fase (dropdown) à esquerda + ordenar (↕) à
+   direita; fundo do cartão por acerto (jogos.js). */
+.closed-controls { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-2); margin: 0 0 var(--sp-3); flex-wrap: wrap; }
+.fase-field { display: inline-flex; align-items: center; gap: var(--sp-2);
+  color: var(--text-2); font-size: var(--fs-sm); }
+.fase-lbl { font-weight: 600; }
+.fase-select { background: var(--card-bg); color: var(--text-0);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 8px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.fase-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sortbtn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--card-bg); color: var(--text-1); border: 1px solid var(--border);
+  border-radius: var(--r-full); padding: 7px 14px; font-size: var(--fs-sm); font-weight: 600; }
+.sortbtn:hover { background: var(--hover); }
+.sortbtn svg { flex: none; color: var(--text-2); }
+/* "Como Jogar" sempre à direita do cabeçalho (inclusive no celular, que quebra linha). */
+.page-head .howtoplay-btn { margin-left: auto; }
 .closed-card.is-exact .match-card { background: var(--gold-soft); border-color: var(--gold); }
 .closed-card.is-right .match-card { background: var(--green-soft); border-color: var(--success); }
 .closed-card.is-wrong .match-card { background: var(--red-soft); border-color: var(--red); }

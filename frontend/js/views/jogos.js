@@ -1,22 +1,23 @@
 // views/jogos.js — Aba unificada "Jogos" (base: antiga Apostas). Funde Jogos +
-// Ao Vivo + Apostas em 3 subdivisões: Futuros (filtro por fase + aposta),
-// Ao vivo (= aba Ao Vivo: palpites de todos + relógio) e Encerrados (filtro por
-// fase + ordenação + fundo por acerto). Rodada 16 (feature I).
+// Ao Vivo + Apostas em 3 subdivisões: Futuros (apostar), Ao vivo (= aba Ao Vivo:
+// palpites de todos + relógio) e Encerrados (filtro de fase + ordenação + fundo
+// por acerto). Rodada 16 (feature I).
 import { ensureData } from '../data.js';
 import { emptyState, h, icon, skeletonList } from '../ui.js';
 import { matchCard } from './matches.js';
 import { liveContent } from './live.js';
 import { howToPlayButton } from '../howtoplay.js';
+import { openMatchBets } from './match_bets_modal.js';
 
 const PHASES = [
-  ['ALL', 'Todos'], ['GROUP', 'Grupos'], ['R32', '16 avos'], ['R16', 'Oitavas'],
-  ['QF', 'Quartas'], ['SF', 'Semis'], ['THIRD', '3º lugar'], ['FINAL', 'Grande Final'],
+  ['ALL', 'Todas as fases'], ['GROUP', 'Fase de grupos'], ['R32', '16 avos'],
+  ['R16', 'Oitavas'], ['QF', 'Quartas'], ['SF', 'Semifinais'],
+  ['THIRD', '3º lugar'], ['FINAL', 'Grande Final'],
 ];
 
 let activeTab = 'future';   // 'future' | 'live' | 'closed'
-let futurePhase = 'ALL';
-let closedPhase = 'ALL';
-let closedSort = 'desc';     // 'desc' = mais recentes primeiro | 'asc' = mais antigos
+let closedPhase = 'ALL';    // filtro de fase — só na subdivisão Encerrados
+let closedSort = 'desc';    // 'desc' = mais recentes primeiro | 'asc' = mais antigos
 
 // Pontos agregados das apostas pontuadas (puro/testável).
 export function tallyBets(withBets) {
@@ -56,40 +57,57 @@ function statusBar(withBets) {
   );
 }
 
-function phaseFilter(phase, setPhase, store) {
-  return h('div', { class: 'filterbar' },
-    PHASES.map(([value, label]) => h('button', {
-      class: `chip ${phase === value ? 'active' : ''}`,
-      type: 'button',
-      onClick: () => { setPhase(value); store.set({}); },
-    }, label)),
-  );
-}
-
 function byPhase(list, phase) {
   return phase === 'ALL' ? list : list.filter((m) => m.stage === phase);
 }
 
 function futureView(store, matches) {
-  const list = byPhase(matches.filter((m) => m.bet_open), futurePhase);
-  return h('div', {},
-    phaseFilter(futurePhase, (v) => { futurePhase = v; }, store),
-    list.length
-      ? h('div', { class: 'mybets-list' }, list.map((m) => matchCard(store, m)))
-      : emptyState('ball', 'Nenhum jogo aberto para aposta nesta fase.',
-        'Novos confrontos abrem assim que ficarem definidos.'),
-  );
+  const list = matches.filter((m) => m.bet_open);
+  return list.length
+    ? h('div', { class: 'mybets-list' }, list.map((m) => matchCard(store, m)))
+    : emptyState('ball', 'Nenhum jogo aberto para aposta agora.',
+      'Novos confrontos abrem assim que ficarem definidos.');
 }
 
-function sortToggle(store) {
-  const opt = (val, label) => h('button', {
-    class: `chip ${closedSort === val ? 'active' : ''}`,
-    type: 'button',
-    onClick: () => { closedSort = val; store.set({}); },
-  }, label);
-  return h('div', { class: 'closed-sort' },
-    h('span', { class: 'closed-sort-lbl' }, 'Ordenar:'),
-    opt('desc', 'Mais recentes'), opt('asc', 'Mais antigos'));
+// Menu suspenso de fase (só nos Encerrados): 1 controle no lugar de 8 botões.
+function phaseSelect(store) {
+  const sel = h('select', {
+    class: 'fase-select', 'aria-label': 'Filtrar por fase',
+    onChange: () => { closedPhase = sel.value; store.set({}); },
+  }, PHASES.map(([value, label]) => h('option', { value }, label)));
+  sel.value = closedPhase;
+  return h('label', { class: 'fase-field' },
+    h('span', { class: 'fase-lbl' }, 'Fase'), sel);
+}
+
+// Botão ↕ (à direita) que inverte a ordem — padrão de sites, no lugar de 2 botões.
+function sortButton(store) {
+  const desc = closedSort === 'desc';
+  return h('button', {
+    class: 'sortbtn', type: 'button',
+    title: desc ? 'Mais recentes primeiro (tocar para inverter)'
+      : 'Mais antigos primeiro (tocar para inverter)',
+    'aria-label': 'Inverter a ordem dos jogos encerrados',
+    onClick: () => { closedSort = desc ? 'asc' : 'desc'; store.set({}); },
+  }, icon('sort', 18),
+    h('span', { class: 'sortbtn-lbl' }, desc ? 'Mais recentes' : 'Mais antigos'));
+}
+
+// Cartão encerrado: fundo pela SUA aposta + CLICÁVEL → modal com os palpites de
+// todos (mesma lógica de cores). lockedView não tem botões, então clicar o cartão
+// inteiro é seguro.
+function closedCard(store, m) {
+  return h('div', {
+    class: `closed-card clickable-card ${closedCardClass(m.my_points, !!m.my_bet)}`,
+    role: 'button', tabindex: '0', title: 'Ver os palpites de todos',
+    onClick: () => openMatchBets(m),
+    onKeydown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMatchBets(m); }
+    },
+  },
+    matchCard(store, m),
+    h('span', { class: 'closed-hint' }, 'Toque para ver os palpites de todos →'),
+  );
 }
 
 function closedView(store, matches) {
@@ -99,12 +117,9 @@ function closedView(store, matches) {
       ? b.kickoff_utc.localeCompare(a.kickoff_utc)
       : a.kickoff_utc.localeCompare(b.kickoff_utc)));
   return h('div', {},
-    phaseFilter(closedPhase, (v) => { closedPhase = v; }, store),
-    sortToggle(store),
+    h('div', { class: 'closed-controls' }, phaseSelect(store), sortButton(store)),
     list.length
-      ? h('div', { class: 'mybets-list jogos-closed' }, list.map((m) =>
-        h('div', { class: `closed-card ${closedCardClass(m.my_points, !!m.my_bet)}` },
-          matchCard(store, m))))
+      ? h('div', { class: 'mybets-list jogos-closed' }, list.map((m) => closedCard(store, m)))
       : emptyState('list', 'Nenhuma aposta encerrada nesta fase ainda.',
         'Suas apostas passadas e os pontos ganhos aparecem aqui.'),
   );

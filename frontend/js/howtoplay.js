@@ -38,7 +38,7 @@ export function howToPlayContent() {
 
 export function howToPlayButton() {
   return h('button', {
-    class: 'btn btn-primary',
+    class: 'btn btn-primary howtoplay-btn',
     type: 'button',
     'aria-label': 'Como Jogar',
     onClick: () => modal('Como Jogar', howToPlayContent()),
