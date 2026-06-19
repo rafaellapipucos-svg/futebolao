@@ -531,3 +531,39 @@ por acerto — reusa `outcomeClass` (hist-gold/green/red) + `.hist-item`/`.hist-
 cada linha abre o perfil público. CSS novo em `css/match-bets.css` (+`<link>` no
 index.html) p/ não estourar os 300 LOC dos CSS existentes. Verde: node:test 65 OK;
 node --check ok. [CODE jogos.js, match_bets_modal.js, match-bets.css, index.html]
+
+### Rodada 16 — relógio ao vivo quebrado + logout frequente (2026-06-19)
+[USER] (1) cronômetro da sub-aba "ao vivo" sumiu (só o dot vermelho); (2) app
+deslogando muito, quer só pedir login no logout manual.
+- I015 relógio: o payload de `/api/live/matches` NÃO tinha `status`, e o novo
+  `liveClock` retornava '' quando `status !== 'live'` (regressão vs o antigo
+  `liveMinute`, que não checava status). FIX: live_matches passa a enviar `status`;
+  e `liveClock` só esconde se o status for EXPLICITAMENTE não-live (sem status =
+  assume ao vivo). [CODE services/public_bets.py, js/format.js]
+- I014 logout frequente: `rotate` revogava a FAMÍLIA inteira a qualquer reuso de
+  refresh. Com access de 15min, 2 abas/retry mandam o MESMO refresh no mesmo ciclo
+  → falso "replay" → derrubava todas as sessões. FIX: janela de graça de 60s — reuso
+  logo após a rotação = corrida benigna (só re-emite, NÃO derruba). Logout e a
+  resposta a replay agora APAGAM o token (`tokens_repo.delete`/`delete_all_for_user`)
+  p/ não caírem na graça (logout mata na hora; replay tardio mata tudo). Sessão dura
+  os 30d do refresh renovando sozinha → só pede login no logout manual (ou 30d sem abrir).
+  [CODE core/tokens.py, db/repos/tokens.py] +3 testes (corrida benigna/replay tardio/logout).
+- Verde: core **188 OK**; node:test **65 OK**; node --check limpo.
+
+### Rodada 16 — multi-dispositivo + hover dos filtros (2026-06-19)
+[USER] (1) 3 dispositivos na mesma conta dão problema? (2) hover dos botões da aba
+Jogos corta o topo.
+- Multi-dispositivo: cada login = cadeia de refresh INDEPENDENTE (3 aparelhos = 3
+  cadeias; rotacionar uma não toca nas outras — funciona no uso normal). Para blindar
+  o caso raro de rede (refresh cuja resposta se perdeu, re-tentado >60s depois),
+  TROQUEI a resposta a reuso tardio: de "revoga TODAS as sessões" (delete_all) para
+  REJEITAR SÓ aquele token (TokenInvalidError) — o aparelho re-loga sozinho, os outros
+  seguem. Roubo de token velho continua bloqueado (token rejeitado); abre mão só do
+  "roubo desloga em todo lugar" (ok p/ bolão de amigos). (supersede a parte de
+  delete_all do I014.) +test_tres_dispositivos_independentes / _reuso_tardio_rejeita_so_o_token.
+  [CODE core/tokens.py, tests]
+- Hover cortando o topo: `.filterbar` tinha `padding-bottom:6px` mas SEM top, e
+  `overflow-x:auto` força clip vertical → o lift do hover (translateY -1px) e o glow
+  do chip ativo cortavam em cima. FIX mínimo: `padding: 6px 0` (top simétrico ao bottom
+  que já existia — completa a intenção original). [CODE components.css]
+- Verde: core **189 OK**; node:test 65 OK.

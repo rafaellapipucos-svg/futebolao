@@ -88,7 +88,9 @@ function _periodPlus(base, minute, stoppage) {
 // provider), cai na estimativa por relógio (ancorada no kickoff REAL, que o
 // poller mantém atualizado). Puro/testável.
 export function liveClock(match, nowMs = Date.now()) {
-  if (!match || match.status !== 'live') return '';
+  // Só esconde o relógio se o status for EXPLICITAMENTE não-live; se vier sem
+  // status (ex.: payload do /api/live/matches), assume contexto ao vivo e mostra.
+  if (!match || (match.status && match.status !== 'live')) return '';
   const { period, minute, stoppage, kickoff_utc } = match;
   switch (period) {
     case '1H': return _periodPlus(45, minute, stoppage);

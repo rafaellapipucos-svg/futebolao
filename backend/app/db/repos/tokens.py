@@ -47,6 +47,16 @@ def revoke_all_for_user(conn: Db, user_id: int) -> None:
     )
 
 
+def delete(conn: Db, jti: str) -> None:
+    """Apaga o token de vez (logout): não fica 'revogado recente' p/ a graça de reuso."""
+    conn.execute("DELETE FROM refresh_tokens WHERE jti = ?", (jti,))
+
+
+def delete_all_for_user(conn: Db, user_id: int) -> None:
+    """Mata todas as sessões do usuário (resposta a replay/roubo)."""
+    conn.execute("DELETE FROM refresh_tokens WHERE user_id = ?", (user_id,))
+
+
 def purge_expired(conn: Db) -> int:
     cur = conn.execute(
         "DELETE FROM refresh_tokens WHERE expires_at < ?",

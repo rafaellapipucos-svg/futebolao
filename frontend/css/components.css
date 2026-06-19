@@ -75,7 +75,7 @@ textarea.input { min-height: 74px; resize: vertical; line-height: 1.45;
 .page-head .sub { color: var(--text-2); font-size: var(--fs-sm); margin-top: 2px; }
 
 /* Filtros (chips roláveis) — container; spec dos chips na seção Filterbar (Ag.5) */
-.filterbar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+.filterbar { display: flex; gap: 8px; overflow-x: auto; padding: 6px 0;
   margin-bottom: var(--sp-4); scrollbar-width: none; }
 .filterbar::-webkit-scrollbar { display: none; }
 

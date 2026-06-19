@@ -66,6 +66,7 @@ def live_matches(conn: Db) -> List[Dict]:
         pub = match_bets_public(conn, m.id)
         out.append({
             "id": m.id,
+            "status": m.status.value,
             "stage_label": STAGE_LABELS_PT[m.stage],
             "group": m.group,
             "kickoff_utc": m.kickoff_utc.isoformat(),

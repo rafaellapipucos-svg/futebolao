@@ -16,6 +16,10 @@ from . import jwt_hs256
 
 ACCESS_TTL_SECONDS = 15 * 60
 REFRESH_TTL_SECONDS = 30 * 24 * 3600
+# Tolerância p/ reuso de refresh LOGO após a rotação: cobre corridas benignas
+# (várias abas / retry de rede renovando juntas) sem derrubar a sessão. Reuso
+# DEPOIS dessa janela = replay/roubo ⇒ revoga tudo. (Rodada 16, I014)
+REUSE_GRACE_SECONDS = 60
 
 
 class TokenInvalidError(ValueError):
@@ -69,8 +73,15 @@ def rotate(conn: Db, refresh_token: str, secret: str) -> Tuple[int, TokenPair]:
     if not tokens_repo.is_active(conn, jti):
         row = tokens_repo.get(conn, jti)
         if row is not None and row["revoked_at"] is not None:
-            tokens_repo.revoke_all_for_user(conn, user_id)  # replay detectado
-            raise TokenReuseError("refresh reutilizado — sessões revogadas")
+            revoked_at = datetime.fromisoformat(row["revoked_at"])
+            age = (datetime.now(timezone.utc) - revoked_at).total_seconds()
+            if age <= REUSE_GRACE_SECONDS:
+                # Corrida benigna (multi-aba/retry) logo após rotação: NÃO revoga
+                # a família — só emite um novo par. Acaba com o logout frequente.
+                return user_id, issue_pair(conn, user_id, secret)
+            # Reuso tardio de um token já rotacionado: rejeita SÓ este token (o
+            # aparelho re-loga sozinho); NÃO derruba os outros dispositivos.
+            raise TokenInvalidError("sessão expirada, entre novamente")
         raise TokenInvalidError("refresh inválido ou expirado")
     tokens_repo.revoke(conn, jti)
     return user_id, issue_pair(conn, user_id, secret)
@@ -83,4 +94,4 @@ def revoke_refresh(conn: Db, refresh_token: str, secret: str) -> None:
         return  # logout com token inválido/expirado: nada a revogar
     jti = payload.get("jti")
     if isinstance(jti, str):
-        tokens_repo.revoke(conn, jti)
+        tokens_repo.delete(conn, jti)  # logout: apaga de vez (não cai na graça de reuso)
