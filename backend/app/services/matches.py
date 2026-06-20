@@ -42,6 +42,7 @@ def list_matches(conn: Db, user_id: int) -> List[Dict]:
             "status": m.status.value,
             "minute": m.minute,
             "period": m.period,
+            "period_started_at": m.period_started_at,
             "stoppage": m.stoppage,
             "home_pens": m.home_pens,
             "away_pens": m.away_pens,

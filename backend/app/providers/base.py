@@ -23,6 +23,8 @@ class ScoreUpdate:
     stoppage: Optional[int] = None
     home_pens: Optional[int] = None    # disputa de pênaltis (tally)
     away_pens: Optional[int] = None
+    paused: bool = False               # status cru == PAUSED (intervalo) p/ máquina de fase
+    duration: Optional[str] = None     # REGULAR/EXTRA_TIME/PENALTY_SHOOTOUT (do provider)
 
 
 class ScoreProvider(Protocol):

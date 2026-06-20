@@ -37,6 +37,7 @@ def set_score(
     home_pens: Optional[int] = None,
     away_pens: Optional[int] = None,
     pens_log: Optional[str] = None,
+    period_started_at: Optional[str] = None,
 ) -> None:
     for v in (home_score, away_score):
         if not isinstance(v, int) or isinstance(v, bool) or not 0 <= v <= 99:
@@ -78,7 +79,7 @@ def set_score(
         matches_repo.set_score(
             conn, match_id, home_score, away_score, status.value, minute, winner_team_id,
             period=period, stoppage=stoppage, home_pens=home_pens,
-            away_pens=away_pens, pens_log=pens_log,
+            away_pens=away_pens, pens_log=pens_log, period_started_at=period_started_at,
         )
         if set_lock is not None:
             matches_repo.set_manual_lock(conn, match_id, set_lock)

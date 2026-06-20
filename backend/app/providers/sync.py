@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from ..db.repos import matches as matches_repo
@@ -16,6 +16,38 @@ from ..db.connection import Db
 
 log = logging.getLogger("bolao.sync")
 MATCH_WINDOW = timedelta(hours=3)
+
+# Fases que "correm" (relógio andando) — só nelas carimbamos period_started_at.
+_RUNNING_PERIODS = ("1H", "2H", "ET1", "ET2")
+
+
+def _next_period(
+    prev: Optional[str],
+    status: MatchStatus,
+    paused: bool,
+    duration: Optional[str],
+) -> Optional[str]:
+    """Máquina de fase do relógio ao vivo dirigida pelo STATUS do provider
+    (confiável), não pelo minuto (que costuma vir NULL). Recebe a fase anterior
+    + status/duração atuais e devolve a fase corrente.
+
+    kickoff→1H; PAUSED no tempo normal→HT; volta→2H; PAUSED na prorrogação→
+    ET_HT; EXTRA_TIME depois de ET_HT→ET2 (senão ET1); PENALTY_SHOOTOUT→PENS;
+    FINISHED→FT; agendado→None.
+    """
+    if status == MatchStatus.FINISHED:
+        return "FT"
+    if status == MatchStatus.SCHEDULED:
+        return None
+    # LIVE (IN_PLAY/PAUSED/SUSPENDED):
+    if paused:
+        return "ET_HT" if duration == "EXTRA_TIME" else "HT"
+    if duration == "PENALTY_SHOOTOUT":
+        return "PENS"
+    if duration == "EXTRA_TIME":
+        return "ET2" if prev in ("ET_HT", "ET2") else "ET1"
+    # tempo normal correndo: 2º tempo se já passou por um intervalo; senão 1º.
+    return "2H" if prev in ("HT", "2H") else "1H"
 
 
 def _index_local(conn: Db) -> Tuple[Dict[str, Match], List[Match]]:
@@ -77,12 +109,24 @@ def apply_updates(conn: Db, updates: List[ScoreUpdate]) -> int:
             continue  # admin assumiu este jogo
         if upd.home_score is None or upd.away_score is None:
             continue  # nada a aplicar (jogo futuro)
+        # Fase do relógio dirigida pelo STATUS (confiável), não pelo minuto. Só
+        # carimba period_started_at na TRANSIÇÃO p/ uma fase que corre: 1H começa
+        # no kickoff; 2H/ET1/ET2 começam "agora" (dentro da cadência do poll).
+        # Sem mudança de fase, preserva o carimbo anterior (o front conta a partir
+        # dele e segue 45+X/90+X até o provider mudar o status — sem chutar intervalo).
+        new_period = _next_period(local.period, upd.status, upd.paused, upd.duration)
+        period_started_at = local.period_started_at
+        if new_period != local.period and new_period in _RUNNING_PERIODS:
+            period_started_at = (
+                local.kickoff_utc.isoformat() if new_period == "1H"
+                else datetime.now(timezone.utc).isoformat()
+            )
         same = (
             local.home_score == upd.home_score
             and local.away_score == upd.away_score
             and local.status == upd.status
             and local.minute == upd.minute
-            and local.period == upd.period
+            and local.period == new_period
             and local.home_pens == upd.home_pens
             and local.away_pens == upd.away_pens
         )
@@ -93,8 +137,9 @@ def apply_updates(conn: Db, updates: List[ScoreUpdate]) -> int:
             set_score(
                 conn, local.id, upd.home_score, upd.away_score, upd.status,
                 minute=upd.minute, winner_team_id=winner_team_id, force=True,
-                period=upd.period, stoppage=upd.stoppage,
+                period=new_period, stoppage=upd.stoppage,
                 home_pens=upd.home_pens, away_pens=upd.away_pens,
+                period_started_at=period_started_at,
             )
             changed += 1
         except ResultError as exc:

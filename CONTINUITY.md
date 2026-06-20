@@ -567,3 +567,46 @@ Jogos corta o topo.
   do chip ativo cortavam em cima. FIX mínimo: `padding: 6px 0` (top simétrico ao bottom
   que já existia — completa a intenção original). [CODE components.css]
 - Verde: core **189 OK**; node:test 65 OK.
+
+### Rodada 16 — relógio ao vivo travado em 45' (2026-06-19)
+[USER] aos 74' o relógio marcava 45'. Causa-raiz: o provider quase nunca manda
+`minute` ao vivo na LISTA de jogos (vem null); aí `_derive_period` caía em '1H' e o
+`liveClock` mostrava a base "45'". (Regressão minha: troquei o `liveMinute`, que
+ESTIMAVA pelo relógio, por confiar no period/minute do provider.) FIX (frontend,
+format.js): `liveClock` volta a ESTIMAR pelo tempo decorrido desde o kickoff quando
+não há minuto confiável (`_estimateClock` = modelo do liveMinute + acréscimos 45+X/90+X);
+usa o minuto do provider só quando vier número >0; estados parados (HT/ET_HT/PENS)
+vêm do period. +teste (89min de relógio → "74'", não 45'). node:test verde.
+[CODE js/format.js, tests/clock.test.js]
+
+## Rodada 17 — relógio dirigido por STATUS (não por chute de tempo) (2026-06-20)
+[USER] corrigiu o approach da R16: se o provider sinaliza intervalo/volta/fim de forma
+confiável (status), NÃO se deve estimar/adivinhar o intervalo por tempo — só contar o
+minuto dentro da fase e seguir 45+X/90+X até o provider mudar o status.
+- D023 ACTIVE (supersede o `_estimateClock` como caminho principal da R16): o relógio
+  ao vivo é dirigido pelo STATUS. O backend roda uma MÁQUINA DE FASE (`sync._next_period`,
+  pura) a partir de status+duration+fase-anterior (o `minute` vem null e NÃO é usado p/
+  fase): kickoff→1H, PAUSED→HT, volta→2H, EXTRA_TIME→ET1/ET2 (ET2 só após ET_HT),
+  PENALTY_SHOOTOUT→PENS, FINISHED→FT. Carimba `period_started_at` SÓ na transição p/ fase
+  que corre (1H=kickoff; 2H/ET1/ET2=agora). O front (`liveClock`) conta `base+(agora−carimbo)`
+  e mostra `limite+X` ao passar do fim do tempo, até o provider mudar a fase. Precedência:
+  minuto do provider (se >0) > contagem desde o carimbo > estimativa pelo kickoff (só
+  último recurso/legado). `_estimateClock` permanece como fallback. [CODE]
+- D024 ACTIVE: schema **v5** — nova coluna `matches.period_started_at TEXT` (migração
+  idempotente em `_MATCH_V4_COLUMNS`); entidade/repo/results/sync/payloads (matches+live)
+  threaded; ScoreUpdate ganhou `paused`/`duration` (status cru p/ a máquina). [CODE]
+- Doc confirmada (docs.football-data.org/general/v4/match.html): status workflow
+  IN_PLAY→PAUSED→FINISHED é o sinal de fase ("players rest (PAUSED)", "final whistle →
+  FINISHED"); LIVE = IN_PLAY+PAUSED. Existe `minute` (top-level) e `injuryTime` — mas na
+  prática vinham null ao vivo (origem do bug R16). Design novo é robusto aos dois casos.
+  injuryTime fica como melhoria futura p/ acréscimo exato (hoje some por elapsed). [TOOL]
+- I016 (=I011, pior): NESTA sessão o mount truncou TODO arquivo editado (entities@115,
+  format.js@119, etc.) — `cat`/`cp`/`python`/`node` liam cortado; `git status` marcava
+  tudo M (truncação parece deleção). Verificação furou o mount via `git archive HEAD`
+  (lê do object store, sem truncar) → árvore R16 limpa em /tmp + overlay dos diffs R17
+  (patches `old→new` precisos) + sidecars `_r17_*` (arquivo novo propaga). File tool =
+  VERDADE (disco Windows intacto; o app do usuário NÃO é afetado). [TOOL]
+- Verificação R17 [TOOL]: core **202 OK** (+13: `test_sync_period` máquina de fase +
+  carimbo) ; node:test **66 OK** (+1: contagem desde o início da fase, sem chutar
+  intervalo) ; todo .py do backend parseia ; format.js `node --check` ok.
+- NEXT [USER]: `git add -A && git commit -m "feat(r17): relogio ao vivo dirigido por status (period_started_at, maquina de fase); schema v5" && git push origin master` (deploy Cloud Run). Conferir num jogo ao vivo: 1ºT conta do apito, vira "Intervalo" só quando o provider pausar, 2ºT conta de 45, "90+X" até o apito final.

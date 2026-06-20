@@ -35,6 +35,7 @@ def to_entity(row: Any) -> Match:
         home_pens=row["home_pens"],
         away_pens=row["away_pens"],
         pens_log=row["pens_log"],
+        period_started_at=row["period_started_at"],
     )
 
 
@@ -92,13 +93,14 @@ def set_score(
     home_pens: Optional[int] = None,
     away_pens: Optional[int] = None,
     pens_log: Optional[str] = None,
+    period_started_at: Optional[str] = None,
 ) -> None:
     conn.execute(
         "UPDATE matches SET home_score = ?, away_score = ?, status = ?, minute = ?, "
         "winner_team_id = ?, period = ?, stoppage = ?, home_pens = ?, away_pens = ?, "
-        "pens_log = ?, updated_at = ? WHERE id = ?",
+        "pens_log = ?, period_started_at = ?, updated_at = ? WHERE id = ?",
         (home_score, away_score, status, minute, winner_team_id, period, stoppage,
-         home_pens, away_pens, pens_log, _now(), match_id),
+         home_pens, away_pens, pens_log, period_started_at, _now(), match_id),
     )
 
 
@@ -107,7 +109,7 @@ def reset_match(conn: Db, match_id: int) -> None:
         "UPDATE matches SET home_score = NULL, away_score = NULL, "
         "status = 'scheduled', minute = NULL, winner_team_id = NULL, period = NULL, "
         "stoppage = NULL, home_pens = NULL, away_pens = NULL, pens_log = NULL, "
-        "updated_at = ? WHERE id = ?",
+        "period_started_at = NULL, updated_at = ? WHERE id = ?",
         (_now(), match_id),
     )
 

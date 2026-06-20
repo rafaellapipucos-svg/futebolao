@@ -72,6 +72,7 @@ def live_matches(conn: Db) -> List[Dict]:
             "kickoff_utc": m.kickoff_utc.isoformat(),
             "minute": m.minute,
             "period": m.period,
+            "period_started_at": m.period_started_at,
             "stoppage": m.stoppage,
             "home_pens": m.home_pens,
             "away_pens": m.away_pens,

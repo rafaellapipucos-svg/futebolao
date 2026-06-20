@@ -11,10 +11,11 @@ def _match_cols(conn):
 
 
 class TestSchemaV4Migration(unittest.TestCase):
-    NEW_COLS = ("period", "stoppage", "home_pens", "away_pens", "pens_log")
+    NEW_COLS = ("period", "stoppage", "home_pens", "away_pens", "pens_log",
+                "period_started_at")
 
-    def test_schema_version_e_4(self):
-        self.assertEqual(SCHEMA_VERSION, 4)
+    def test_schema_version_atual(self):
+        self.assertEqual(SCHEMA_VERSION, 5)
 
     def test_migra_matches_legado(self):
         conn = connect(":memory:")

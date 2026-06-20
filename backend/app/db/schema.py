@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .connection import Db
 
-SCHEMA_VERSION = 4  # v4: matches.period/stoppage/home_pens/away_pens/pens_log
+SCHEMA_VERSION = 5  # v5: + matches.period_started_at (relógio ao vivo dirigido por status)
 
 _DIALECT_TOKENS = {
     "sqlite": {
@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS matches (
   home_pens INTEGER,
   away_pens INTEGER,
   pens_log TEXT,
+  period_started_at TEXT,
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
@@ -126,6 +127,7 @@ _MATCH_V4_COLUMNS = (
     ("home_pens", "ALTER TABLE matches ADD COLUMN home_pens INTEGER"),
     ("away_pens", "ALTER TABLE matches ADD COLUMN away_pens INTEGER"),
     ("pens_log", "ALTER TABLE matches ADD COLUMN pens_log TEXT"),
+    ("period_started_at", "ALTER TABLE matches ADD COLUMN period_started_at TEXT"),
 )
 
 

@@ -125,6 +125,8 @@ def parse_match(raw: Dict) -> ScoreUpdate:
         period=_derive_period(raw.get("status", ""), score.get("duration"), minute),
         home_pens=home_pens if isinstance(home_pens, int) else None,
         away_pens=away_pens if isinstance(away_pens, int) else None,
+        paused=raw.get("status") == "PAUSED",
+        duration=score.get("duration"),
     )
 
 

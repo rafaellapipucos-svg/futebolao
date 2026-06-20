@@ -81,6 +81,7 @@ class Match:
     home_pens: Optional[int] = None  # disputa de pênaltis (None se não houve)
     away_pens: Optional[int] = None
     pens_log: Optional[str] = None   # JSON chute-a-chute (opcional, p/ mini-placar)
+    period_started_at: Optional[str] = None  # ISO: início da fase atual (relógio ao vivo)
 
     @property
     def has_score(self) -> bool:

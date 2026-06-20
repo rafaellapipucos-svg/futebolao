@@ -83,26 +83,65 @@ function _periodPlus(base, minute, stoppage) {
   return `${minute != null ? minute : base}'`;
 }
 
-// Relógio do jogo AO VIVO ciente da FASE (period do servidor): 1º tempo "45+X",
-// 2º tempo "90+X", prorrogação "105+X"/"120+X" e "Pênaltis". Sem period (sem
-// provider), cai na estimativa por relógio (ancorada no kickoff REAL, que o
-// poller mantém atualizado). Puro/testável.
+// Mapa das fases que CORREM: period -> [base, limite]. base = minuto em que a
+// fase começa (1ºT=0, 2ºT=45, ET1=90, ET2=105); limite = onde entram acréscimos.
+const _RUNNING = { '1H': [0, 45], '2H': [45, 90], ET1: [90, 105], ET2: [105, 120] };
+
+// Relógio do jogo AO VIVO dirigido pelo STATUS do provider (confiável), não por
+// chute de tempo. As FRONTEIRAS de fase (intervalo, volta, fim) vêm do provider:
+// "HT"/"ET_HT"/"PENS"/"FT" são estados parados/encerrados. Dentro de uma fase que
+// corre, conta o minuto a partir de period_started_at (carimbado pelo backend na
+// transição de status) e segue "45+X"/"90+X"/... até o provider mudar a fase —
+// nunca adivinha o intervalo. Precedência: minuto do provider > contagem desde o
+// início da fase > estimativa pelo kickoff (último recurso). Pura/testável.
 export function liveClock(match, nowMs = Date.now()) {
-  // Só esconde o relógio se o status for EXPLICITAMENTE não-live; se vier sem
-  // status (ex.: payload do /api/live/matches), assume contexto ao vivo e mostra.
+  // Só esconde o relógio se o status for EXPLICITAMENTE não-live; sem status
+  // (ex.: payload de /api/live/matches) assume contexto ao vivo e mostra.
   if (!match || (match.status && match.status !== 'live')) return '';
-  const { period, minute, stoppage, kickoff_utc } = match;
-  switch (period) {
-    case '1H': return _periodPlus(45, minute, stoppage);
-    case 'HT': return 'Intervalo';
-    case '2H': return _periodPlus(90, minute, stoppage);
-    case 'ET1': return _periodPlus(105, minute, stoppage);
-    case 'ET_HT': return 'Intervalo da prorrogação';
-    case 'ET2': return _periodPlus(120, minute, stoppage);
-    case 'PENS': return 'Pênaltis';
-    case 'FT': return '';
-    default: return liveMinute(kickoff_utc, minute, nowMs);
+  const { period, minute, stoppage, kickoff_utc, period_started_at } = match;
+  // Estados PARADOS/ENCERRADOS: confiáveis pelo status do provider.
+  if (period === 'HT') return 'Intervalo';
+  if (period === 'ET_HT') return 'Intervalo da prorrogação';
+  if (period === 'PENS') return 'Pênaltis';
+  const ph = _RUNNING[period]; // [base, limite] da fase corrente (ou undefined)
+  // 1) Minuto exato do provider, se vier número plausível (>0).
+  const sMin = (typeof minute === 'number' && minute > 0) ? minute : null;
+  if (ph && sMin != null) return _periodPlus(ph[1], sMin, stoppage);
+  // 2) Conta desde o INÍCIO DA FASE (carimbo do backend). Passou do limite →
+  //    "limite+X" e segue subindo até o provider sinalizar pausa/fim.
+  if (ph && period_started_at) {
+    const start = new Date(period_started_at).getTime();
+    if (!Number.isNaN(start)) {
+      const gm = ph[0] + Math.floor((nowMs - start) / 60000);
+      return gm > ph[1] ? `${ph[1]}+${gm - ph[1]}'` : `${Math.max(ph[0] + 1, gm)}'`;
+    }
   }
+  // 3) Último recurso (sem fase/carimbo confiável): estimativa pelo kickoff real.
+  return _estimateClock(kickoff_utc, nowMs, period === 'ET1' || period === 'ET2');
+}
+
+// Estimativa do relógio pelo tempo decorrido (quando o provider não manda o
+// minuto ao vivo). Modelo do antigo liveMinute + acréscimos. Intervalo ~15min.
+// Pura/testável.
+function _estimateClock(kickoffIso, nowMs, inET) {
+  const start = new Date(kickoffIso).getTime();
+  if (Number.isNaN(start)) return 'AO VIVO';
+  const e = Math.floor((nowMs - start) / 60000);
+  if (e < 0) return 'AO VIVO';
+  if (inET) {
+    const g = e - 18; // desconta intervalo + intervalo da prorrogação (aprox.)
+    if (g <= 105) return `${Math.max(91, g)}'`;
+    if (g <= 108) return `105+${g - 105}'`;
+    if (g <= 120) return `${g}'`;
+    return `120+${Math.max(1, g - 120)}'`;
+  }
+  if (e <= 45) return `${Math.max(1, e)}'`;
+  if (e <= 48) return `45+${e - 45}'`;
+  if (e <= 60) return 'Intervalo';
+  const g = e - 15; // 2º tempo: desconta o intervalo
+  if (g <= 90) return `${g}'`;
+  if (g <= 95) return `90+${g - 90}'`;
+  return "90+'";
 }
 
 export function statusLabel(status) {
