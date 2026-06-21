@@ -164,5 +164,5 @@ def admin_reset_password(
     users_repo.set_password(
         conn, user_id, hash_password(body.new_password, settings.pepper)
     )
-    tokens_repo.revoke_all_for_user(conn, user_id)
+    tokens_repo.delete_all_for_user(conn, user_id)
     return {"ok": True}

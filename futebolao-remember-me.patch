@@ -1,0 +1,458 @@
+diff --git a/README.md b/README.md
+index ce3e1b7..0f2f15c 100644
+--- a/README.md
++++ b/README.md
+@@ -61,6 +61,41 @@ O plano Starter elimina isso.
+ banco é o Supabase). **Docker local**: `cp .env.example .env` (preencha
+ segredos; DATABASE_URL vazio = SQLite) e `docker compose up --build`.
+ 
++## Deploy: Google Cloud Run
++
++O disco do Cloud Run e **efemero** — some a cada deploy e a cada cold start. Logo
++o banco **tem que ser externo** (Supabase) e os segredos **fixos** no Secret
++Manager; senao cada deploy zera contas, apostas e sessoes (todo mundo reloga). O
++boot agora **recusa** subir no Cloud Run sem `DATABASE_URL` (trava em `config.py`;
++escape so p/ teste descartavel: `ALLOW_EPHEMERAL_DB=true`).
++
++1. **Supabase** — a mesma connection string do passo do Render (Session Pooler,
++   porta 5432).
++2. **Segredos fixos** — gere UMA vez e nunca troque (trocar `SECRET_KEY` desloga
++   todo mundo; trocar `PEPPER` quebra TODAS as senhas):
++   ```bash
++   python3 -c "import secrets;print(secrets.token_urlsafe(48))" | tr -d '\n' \
++     | gcloud secrets create SECRET_KEY --data-file=-
++   python3 -c "import secrets;print(secrets.token_urlsafe(48))" | tr -d '\n' \
++     | gcloud secrets create PEPPER --data-file=-
++   printf '%s' 'postgresql://...supabase...' \
++     | gcloud secrets create DATABASE_URL --data-file=-
++   ```
++3. **Deploy** referenciando os segredos:
++   ```bash
++   gcloud run deploy futebolao --source . --region southamerica-east1 \
++     --min-instances 1 --max-instances 1 --allow-unauthenticated \
++     --set-secrets SECRET_KEY=SECRET_KEY:latest,PEPPER=PEPPER:latest,DATABASE_URL=DATABASE_URL:latest \
++     --set-env-vars COOKIE_SECURE=true,PUBLIC_BASE_URL=https://SEU-SERVICO.run.app,ADMIN_EMAILS=seu@email
++   ```
++   `--max-instances 1` e obrigatorio: SSE, rate-limit e cache do ranking vivem na
++   memoria do processo. `--min-instances 1` mantem o poller de placares de pe e
++   evita cold start (a **sessao** sobrevive ao cold start de qualquer jeito — ela
++   vive no Supabase + cookie; quem nao sobrevive e o poller e os caches em memoria).
++4. Nos logs do boot, confira a linha `boot fingerprints: SECRET_KEY=... PEPPER=...`:
++   se o fingerprint **mudar** entre dois deploys, a chave nao esta fixa — e essa a
++   causa de "caiu todo mundo no deploy".
++
+ ## Testes
+ 
+ ```bash
+@@ -98,8 +133,7 @@ recalcula o chaveamento. CLI usa o mesmo `DATABASE_URL` do ambiente.
+ 
+ ## Segurança (resumo)
+ 
+-bcrypt+pepper (custo 12), JWT HS256 com refresh rotacionado/revogável (reuso
+-revoga a família), cookies HttpOnly SameSite=Lax Secure, CSRF double-submit,
++bcrypt+pepper (custo 12), JWT HS256 com sessão de 90 dias e renovação tolerante (logout e troca de senha encerram na hora), cookies HttpOnly SameSite=Lax Secure, CSRF double-submit,
+ rate limiting por IP/escopo, SQL 100% parametrizado (scan AST no CI) com
+ tradução de placeholders no adapter, uploads re-codificados via Pillow direto
+ para o banco, CSP sem CDNs, HSTS. Detalhes: ARCHITECTURE.md §7 e TESTPLAN.md.
+diff --git a/backend/app/api/admin.py b/backend/app/api/admin.py
+index 5562555..838fba8 100644
+--- a/backend/app/api/admin.py
++++ b/backend/app/api/admin.py
+@@ -164,5 +164,5 @@ def admin_reset_password(
+     users_repo.set_password(
+         conn, user_id, hash_password(body.new_password, settings.pepper)
+     )
+-    tokens_repo.revoke_all_for_user(conn, user_id)
++    tokens_repo.delete_all_for_user(conn, user_id)
+     return {"ok": True}
+diff --git a/backend/app/cli.py b/backend/app/cli.py
+index ad3eafc..70125f0 100644
+--- a/backend/app/cli.py
++++ b/backend/app/cli.py
+@@ -54,7 +54,7 @@ def cmd_reset_password(settings, args) -> int:
+     password = args.password or getpass.getpass("nova senha: ")
+     validate_password_strength(password)
+     users_repo.set_password(conn, user["id"], hash_password(password, settings.pepper))
+-    tokens_repo.revoke_all_for_user(conn, user["id"])
++    tokens_repo.delete_all_for_user(conn, user["id"])
+     print("senha redefinida e sessões revogadas")
+     return 0
+ 
+diff --git a/backend/app/config.py b/backend/app/config.py
+index 1d5dbb3..2fc52b5 100644
+--- a/backend/app/config.py
++++ b/backend/app/config.py
+@@ -58,6 +58,22 @@ class Settings:
+         return str(self.data_dir / "bolao.db")
+ 
+ 
++# Plataformas de disco efemero (serverless): o FS do container e recriado a cada
++# deploy E a cada cold start. Sem banco externo (DATABASE_URL) o SQLite local some
++# junto — apaga contas, apostas e sessoes (refresh tokens vivem no banco). (D025)
++_EPHEMERAL_MARKERS = {
++    "K_SERVICE": "Google Cloud Run",  # Cloud Run sempre define K_SERVICE
++}
++
++
++def _detect_ephemeral_platform(env: dict) -> Optional[str]:
++    """Nome da plataforma efemera detectada via env, ou None (dev/dedicado)."""
++    for marker, name in _EPHEMERAL_MARKERS.items():
++        if env.get(marker):
++            return name
++    return None
++
++
+ def load_settings(env: Optional[dict] = None) -> Settings:
+     if env is None:
+         _load_dotenv(Path(".env"))
+@@ -82,6 +98,15 @@ def load_settings(env: Optional[dict] = None) -> Settings:
+                 f"'{database_url[:16]}...')"
+             )
+ 
++    ephemeral = _detect_ephemeral_platform(env)
++    if ephemeral and not database_url:
++        if env.get("ALLOW_EPHEMERAL_DB", "").lower() not in ("1", "true", "yes"):
++            raise RuntimeError(
++                f"Detectado {ephemeral} (disco efemero) SEM DATABASE_URL: o SQLite "
++                "local some a cada deploy/cold start — apaga contas, apostas e sessoes "
++                "(todos relogam). Configure DATABASE_URL (Postgres/Supabase). Apenas "
++                "para ambiente descartavel: ALLOW_EPHEMERAL_DB=true."
++            )
+     data_dir = Path(env.get("DATA_DIR", "./data"))
+     admin_emails = {
+         e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()
+diff --git a/backend/app/core/tokens.py b/backend/app/core/tokens.py
+index d02c98d..5847d08 100644
+--- a/backend/app/core/tokens.py
++++ b/backend/app/core/tokens.py
+@@ -1,10 +1,12 @@
+-"""Sessões: access token curto + refresh token rotacionado e revogável.
+-
+-Reuso de um refresh já rotacionado: dentro de REUSE_GRACE_SECONDS é tratado como
+-corrida benigna (multi-aba/retry) e só emite um novo par; depois da janela, o
+-token é rejeitado (o aparelho re-loga sozinho) SEM derrubar as outras sessões.
+-(Rodada 16, I014 — antes revogava a família inteira; mudou p/ evitar logout em
+-massa.)
++"""Sessões: access token curto + refresh com renovação TOLERANTE.
++
++A sessão é "grudenta" de propósito (bolão de amigos): enquanto a LINHA do refresh
++existir no banco e não tiver expirado, `rotate` re-emite um novo par — mesmo que o
++token apresentado já tenha sido rotacionado. Isso elimina o logout falso por reuso
++tardio: celular dormindo, resposta de rede perdida, cold start do Cloud Run, várias
++abas. Só re-loga de verdade quando a sessão é ENCERRADA de propósito — logout e
++troca de senha APAGAM a linha (delete) — ou quando o refresh expira (90 dias).
++(D027/D028; supersede a janela de graça de I014/REUSE_GRACE_SECONDS.)
+ """
+ from __future__ import annotations
+ 
+@@ -18,11 +20,7 @@ from ..db.repos import tokens as tokens_repo
+ from . import jwt_hs256
+ 
+ ACCESS_TTL_SECONDS = 15 * 60
+-REFRESH_TTL_SECONDS = 30 * 24 * 3600
+-# Tolerância p/ reuso de refresh LOGO após a rotação: cobre corridas benignas
+-# (várias abas / retry de rede renovando juntas) sem derrubar a sessão. Reuso
+-# DEPOIS dessa janela = rejeita SÓ este token (não derruba a família). (I014)
+-REUSE_GRACE_SECONDS = 60
++REFRESH_TTL_SECONDS = 90 * 24 * 3600  # 90 dias: cobre a Copa toda com folga (D028)
+ 
+ 
+ class TokenInvalidError(ValueError):
+@@ -61,6 +59,11 @@ def verify_access(token: str, secret: str) -> int:
+ 
+ 
+ def rotate(conn: Db, refresh_token: str, secret: str) -> Tuple[int, TokenPair]:
++    """Renova a sessão de forma TOLERANTE (ver docstring do módulo).
++
++    Re-emite enquanto a linha existir e não expirou; rejeita só quando a linha foi
++    APAGADA (logout / troca de senha = kill real) ou quando o refresh expirou.
++    """
+     try:
+         payload = jwt_hs256.verify(refresh_token, secret, expected_typ="refresh")
+     except jwt_hs256.JwtError as exc:
+@@ -69,20 +72,14 @@ def rotate(conn: Db, refresh_token: str, secret: str) -> Tuple[int, TokenPair]:
+     user_id = int(payload["sub"])
+     if not isinstance(jti, str):
+         raise TokenInvalidError("refresh sem jti")
+-    if not tokens_repo.is_active(conn, jti):
+-        row = tokens_repo.get(conn, jti)
+-        if row is not None and row["revoked_at"] is not None:
+-            revoked_at = datetime.fromisoformat(row["revoked_at"])
+-            age = (datetime.now(timezone.utc) - revoked_at).total_seconds()
+-            if age <= REUSE_GRACE_SECONDS:
+-                # Corrida benigna (multi-aba/retry) logo após rotação: NÃO revoga
+-                # a família — só emite um novo par. Acaba com o logout frequente.
+-                return user_id, issue_pair(conn, user_id, secret)
+-            # Reuso tardio de um token já rotacionado: rejeita SÓ este token (o
+-            # aparelho re-loga sozinho); NÃO derruba os outros dispositivos.
+-            raise TokenInvalidError("sessão expirada, entre novamente")
+-        raise TokenInvalidError("refresh inválido ou expirado")
+-    tokens_repo.revoke(conn, jti)
++    row = tokens_repo.get(conn, jti)
++    if row is None:
++        raise TokenInvalidError("sessão encerrada, entre novamente")
++    if datetime.fromisoformat(row["expires_at"]) <= datetime.now(timezone.utc):
++        raise TokenInvalidError("sessão expirada, entre novamente")
++    if row["revoked_at"] is None:
++        tokens_repo.revoke(conn, jti)  # 1º uso deste token: rotaciona
++    # Reuso tardio de um token já rotacionado NÃO desloga — re-emite par novo.
+     return user_id, issue_pair(conn, user_id, secret)
+ 
+ 
+@@ -90,7 +87,7 @@ def revoke_refresh(conn: Db, refresh_token: str, secret: str) -> None:
+     try:
+         payload = jwt_hs256.verify(refresh_token, secret, expected_typ="refresh", leeway_seconds=0)
+     except jwt_hs256.JwtError:
+-        return  # logout com token inválido/expirado: nada a revogar
++        return  # logout com token inválido/expirado: nada a apagar
+     jti = payload.get("jti")
+     if isinstance(jti, str):
+-        tokens_repo.delete(conn, jti)  # logout: apaga de vez (não cai na graça de reuso)
++        tokens_repo.delete(conn, jti)  # logout: APAGA a linha (kill real)
+diff --git a/backend/app/main.py b/backend/app/main.py
+index 42e7225..e3ca639 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -1,6 +1,7 @@
+ """App factory FastAPI: wiring de routers, estaticos, seguranca e ciclo de vida."""
+ from __future__ import annotations
+ 
++import hashlib
+ import logging
+ from contextlib import asynccontextmanager
+ from pathlib import Path
+@@ -10,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
+ from fastapi.staticfiles import StaticFiles
+ 
+ from .api import admin, auth, bets, game, meta, oauth, profile, sse, users
+-from .config import load_settings
++from .config import Settings, load_settings
+ from .core.ratelimit import default_limiter
+ from .db.connection import connect
+ from .db.schema import init_db
+@@ -35,8 +36,27 @@ SECURITY_HEADERS = {
+ }
+ 
+ 
++def _fingerprint(secret: str) -> str:
++    """sha256[:8] — derivado nao-reversivel, seguro p/ log (nunca o segredo)."""
++    return hashlib.sha256(secret.encode("utf-8")).hexdigest()[:8]
++
++
++def _log_boot_fingerprint(settings: Settings) -> None:
++    # Se a fp de SECRET_KEY/PEPPER mudar entre deploys, todo JWT/refresh perde a
++    # validade e o pessoal reloga (e trocar PEPPER quebra TODOS os logins). Visivel
++    # nos logs do Cloud Run p/ diagnosticar "caiu todo mundo no deploy".
++    db = "postgres" if settings.uses_postgres else "sqlite-LOCAL(efemero se serverless)"
++    log.info(
++        "boot fingerprints: SECRET_KEY=%s PEPPER=%s db=%s "
++        "(fp estavel entre deploys => sessoes preservadas)",
++        _fingerprint(settings.secret_key), _fingerprint(settings.pepper), db,
++    )
++
++
+ def create_app() -> FastAPI:
++    logging.basicConfig(level=logging.INFO)
+     settings = load_settings()
++    _log_boot_fingerprint(settings)
+     if not settings.uses_postgres:
+         settings.data_dir.mkdir(parents=True, exist_ok=True)
+ 
+diff --git a/backend/tests/core/test_config_guard.py b/backend/tests/core/test_config_guard.py
+new file mode 100644
+index 0000000..2892b94
+--- /dev/null
++++ b/backend/tests/core/test_config_guard.py
+@@ -0,0 +1,38 @@
++"""Guard de boot: producao em disco efemero (Cloud Run) exige DATABASE_URL.
++
++Sem isso o SQLite local some a cada deploy/cold start — zera contas, apostas e
++sessoes (todo mundo reloga). Ver D025 e incidente I017 no CONTINUITY.md.
++"""
++from __future__ import annotations
++
++import unittest
++
++from app.config import load_settings
++
++BASE = {"SECRET_KEY": "s" * 48, "PEPPER": "p" * 48}
++PG = "postgresql://u:p@host:5432/db"
++
++
++class EphemeralPlatformGuardTest(unittest.TestCase):
++    def test_cloud_run_sem_database_url_falha(self):
++        with self.assertRaises(RuntimeError) as ctx:
++            load_settings({**BASE, "K_SERVICE": "futebolao"})
++        self.assertIn("DATABASE_URL", str(ctx.exception))
++
++    def test_cloud_run_com_database_url_ok(self):
++        s = load_settings({
++            **BASE, "K_SERVICE": "futebolao", "DATABASE_URL": PG,
++            "PUBLIC_BASE_URL": "https://futebolao.run.app", "COOKIE_SECURE": "true",
++        })
++        self.assertTrue(s.uses_postgres)
++
++    def test_dev_local_sem_plataforma_ok(self):
++        self.assertFalse(load_settings({**BASE}).uses_postgres)
++
++    def test_escape_hatch_explicito_ok(self):
++        s = load_settings({**BASE, "K_SERVICE": "x", "ALLOW_EPHEMERAL_DB": "true"})
++        self.assertFalse(s.uses_postgres)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/backend/tests/core/test_tokens.py b/backend/tests/core/test_tokens.py
+index 61fadf4..62ce036 100644
+--- a/backend/tests/core/test_tokens.py
++++ b/backend/tests/core/test_tokens.py
+@@ -8,6 +8,7 @@ from app.core.tokens import (
+     verify_access,
+ )
+ from app.db.connection import connect
++from app.db.repos import tokens as tokens_repo
+ from app.db.repos import users as users_repo
+ from app.db.schema import init_db
+ 
+@@ -48,28 +49,26 @@ class TestTokens(unittest.TestCase):
+         self.assertNotEqual(pair.refresh, new_pair.refresh)
+ 
+     def test_reuso_imediato_e_corrida_benigna(self):
+-        # 2 abas/retry renovando juntas: reuso LOGO após a rotação NÃO derruba a sessão.
++        # 2 abas/retry renovando juntas: reuso LOGO após a rotação re-emite par novo.
+         pair = issue_pair(self.conn, self.uid, SECRET)
+         _, new_pair = rotate(self.conn, pair.refresh, SECRET)
+-        _, race_pair = rotate(self.conn, pair.refresh, SECRET)  # dentro da graça
++        _, race_pair = rotate(self.conn, pair.refresh, SECRET)
+         self.assertNotEqual(race_pair.refresh, new_pair.refresh)
+-        # a sessão nova segue VÁLIDA (família não foi revogada):
+-        uid, _ = rotate(self.conn, new_pair.refresh, SECRET)
+-        self.assertEqual(uid, self.uid)
++        self.assertEqual(rotate(self.conn, new_pair.refresh, SECRET)[0], self.uid)
+ 
+-    def test_reuso_tardio_rejeita_so_o_token(self):
+-        from app.core import tokens as tok
++    def test_reuso_tardio_reemite_nao_desloga(self):
++        # CERNE DA CORREÇÃO: reuso TARDIO de um token já rotacionado (celular
++        # dormindo / resposta perdida / cold start) NÃO desloga — re-emite par novo.
+         pair = issue_pair(self.conn, self.uid, SECRET)
+         _, new_pair = rotate(self.conn, pair.refresh, SECRET)
+-        self._backdate_revocation(pair.refresh, tok.REUSE_GRACE_SECONDS + 120)
+-        with self.assertRaises(TokenInvalidError):  # reuso tardio: rejeita só ele
+-            rotate(self.conn, pair.refresh, SECRET)
+-        # as OUTRAS sessões/dispositivos seguem vivos (não derruba ninguém):
+-        uid, _ = rotate(self.conn, new_pair.refresh, SECRET)
++        self._backdate_revocation(pair.refresh, 6 * 3600)  # rotacionado há 6h
++        uid, reissued = rotate(self.conn, pair.refresh, SECRET)  # NÃO levanta
+         self.assertEqual(uid, self.uid)
++        self.assertNotEqual(reissued.refresh, pair.refresh)
++        # a sessão nova também segue válida:
++        self.assertEqual(rotate(self.conn, new_pair.refresh, SECRET)[0], self.uid)
+ 
+     def test_tres_dispositivos_independentes(self):
+-        # 3 logins separados = 3 cadeias; rotacionar uma NÃO afeta as outras.
+         a = issue_pair(self.conn, self.uid, SECRET)
+         b = issue_pair(self.conn, self.uid, SECRET)
+         c = issue_pair(self.conn, self.uid, SECRET)
+@@ -77,12 +76,20 @@ class TestTokens(unittest.TestCase):
+         self.assertEqual(rotate(self.conn, b.refresh, SECRET)[0], self.uid)
+         self.assertEqual(rotate(self.conn, c.refresh, SECRET)[0], self.uid)
+ 
+-    def test_logout_revoga(self):
++    def test_logout_apaga_e_rejeita(self):
++        # Logout APAGA a linha → o refresh re-loga de verdade.
+         pair = issue_pair(self.conn, self.uid, SECRET)
+         revoke_refresh(self.conn, pair.refresh, SECRET)
+         with self.assertRaises(TokenInvalidError):
+             rotate(self.conn, pair.refresh, SECRET)
+ 
++    def test_troca_de_senha_apaga_e_rejeita(self):
++        # Troca de senha (admin/cli) APAGA todas as linhas do usuário → re-login.
++        pair = issue_pair(self.conn, self.uid, SECRET)
++        tokens_repo.delete_all_for_user(self.conn, self.uid)
++        with self.assertRaises(TokenInvalidError):
++            rotate(self.conn, pair.refresh, SECRET)
++
+     def test_logout_token_lixo_nao_explode(self):
+         revoke_refresh(self.conn, "lixo.total.aqui", SECRET)
+ 
+diff --git a/frontend/js/api.js b/frontend/js/api.js
+index 4077872..3fe0dbc 100644
+--- a/frontend/js/api.js
++++ b/frontend/js/api.js
+@@ -36,11 +36,34 @@ async function rawRequest(path, { method = 'GET', json, formData } = {}) {
+ 
+ let refreshing = null;
+ 
++function sleep(ms) {
++  return new Promise((resolve) => setTimeout(resolve, ms));
++}
++
++// Renova INSISTINDO: falha de rede / 429 / 5xx (cold start, oscilacao, WiFi
++// compartilhado) sao temporarias -> backoff e tenta de novo. So 401/403 (sessao
++// realmente encerrada: logout/troca de senha) faz desistir = re-login de verdade.
++async function refreshWithRetry() {
++  const backoff = [400, 1200, 3000];
++  for (let attempt = 0; ; attempt += 1) {
++    let resp;
++    try {
++      resp = await rawRequest('/api/auth/refresh', { method: 'POST' });
++    } catch (err) {
++      if (attempt >= backoff.length) return false;
++      await sleep(backoff[attempt]);
++      continue;
++    }
++    if (resp.ok) return true;
++    if (resp.status === 401 || resp.status === 403) return false;
++    if (attempt >= backoff.length) return false;
++    await sleep(backoff[attempt]);
++  }
++}
++
+ async function tryRefresh() {
+   if (!refreshing) {
+-    refreshing = rawRequest('/api/auth/refresh', { method: 'POST' })
+-      .then((r) => r.ok)
+-      .finally(() => { refreshing = null; });
++    refreshing = refreshWithRetry().finally(() => { refreshing = null; });
+   }
+   return refreshing;
+ }
+diff --git a/frontend/tests/api.test.js b/frontend/tests/api.test.js
+index 51397cd..88025f6 100644
+--- a/frontend/tests/api.test.js
++++ b/frontend/tests/api.test.js
+@@ -4,7 +4,7 @@ import { test } from 'node:test';
+ // Mocks mínimos (api.js usa document.cookie e fetch globais).
+ globalThis.document = { cookie: 'csrf_token=tok123' };
+ const calls = [];
+-let firstX = true;
++const once = { '/x': true, '/p': true };
+ function mkResp(status, body) {
+   return {
+     status, ok: status >= 200 && status < 300,
+@@ -14,9 +14,12 @@ function mkResp(status, body) {
+ }
+ globalThis.fetch = async (url, opts = {}) => {
+   calls.push({ url, method: opts.method || 'GET' });
+-  if (url === '/x' && firstX) { firstX = false; return mkResp(403, { detail: 'CSRF token inválido ou ausente' }); }
++  if (url === '/x' && once['/x']) { once['/x'] = false; return mkResp(403, { detail: 'CSRF token inválido ou ausente' }); }
++  if (url === '/p' && once['/p']) { once['/p'] = false; return mkResp(401, { detail: 'sessão expirada' }); }
+   if (url === '/api/meta/config') return mkResp(200, { ok: true });
++  if (url === '/api/auth/refresh') return mkResp(200, { ok: true });
+   if (url === '/x') return mkResp(200, { done: true });
++  if (url === '/p') return mkResp(200, { ok: true });
+   return mkResp(200, {});
+ };
+ 
+@@ -28,3 +31,10 @@ test('403-CSRF reemite o config e re-tenta a requisição mutante', async () =>
+   assert.ok(calls.some((c) => c.url === '/api/meta/config'), 'buscou o config');
+   assert.equal(calls.filter((c) => c.url === '/x').length, 2, 'tentou /x duas vezes');
+ });
++
++test('401 renova a sessão (refresh) e re-tenta a requisição', async () => {
++  const r = await request('/p');
++  assert.deepEqual(r, { ok: true });
++  assert.ok(calls.some((c) => c.url === '/api/auth/refresh'), 'chamou o refresh');
++  assert.equal(calls.filter((c) => c.url === '/p').length, 2, 'tentou /p duas vezes');
++});

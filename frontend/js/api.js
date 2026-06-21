@@ -36,11 +36,34 @@ async function rawRequest(path, { method = 'GET', json, formData } = {}) {
 
 let refreshing = null;
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Renova INSISTINDO: falha de rede / 429 / 5xx (cold start, oscilacao, WiFi
+// compartilhado) sao temporarias -> backoff e tenta de novo. So 401/403 (sessao
+// realmente encerrada: logout/troca de senha) faz desistir = re-login de verdade.
+async function refreshWithRetry() {
+  const backoff = [400, 1200, 3000];
+  for (let attempt = 0; ; attempt += 1) {
+    let resp;
+    try {
+      resp = await rawRequest('/api/auth/refresh', { method: 'POST' });
+    } catch (err) {
+      if (attempt >= backoff.length) return false;
+      await sleep(backoff[attempt]);
+      continue;
+    }
+    if (resp.ok) return true;
+    if (resp.status === 401 || resp.status === 403) return false;
+    if (attempt >= backoff.length) return false;
+    await sleep(backoff[attempt]);
+  }
+}
+
 async function tryRefresh() {
   if (!refreshing) {
-    refreshing = rawRequest('/api/auth/refresh', { method: 'POST' })
-      .then((r) => r.ok)
-      .finally(() => { refreshing = null; });
+    refreshing = refreshWithRetry().finally(() => { refreshing = null; });
   }
   return refreshing;
 }

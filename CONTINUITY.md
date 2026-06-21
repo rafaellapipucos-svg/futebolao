@@ -685,3 +685,47 @@ core 213 testes verdes; front node --test 67 verdes + node --check limpo; contra
   rebuild do zero (A3) — o admin tem o opt-in de um clique.
 - NEXT [USER] (local): `bash scripts/verify.sh` + `docker build .` (gate pytest HTTP);
   rodar `make lock` 1x p/ gerar requirements.lock; setar max-instances=1 no Cloud Run.
+
+## Rodada 18 — "lembrar de mim" / blindagem do deploy (2026-06-21)
+- [USER] pedido: ninguém deve cair a cada deploy (só por motivo sério de segurança).
+  Diagnóstico: a sessão JÁ é persistente (cookie 30d + refresh rotacionado/deslizante
+  + refresh-em-401 silencioso no api.js). Logout-no-deploy NÃO é código: é Cloud Run
+  com SQLite EFÊMERO (sem DATABASE_URL) — cada deploy/cold start zera contas+apostas+sessões.
+- D025 ACTIVE: boot RECUSA subir em plataforma de disco efêmero (Cloud Run via K_SERVICE)
+  sem DATABASE_URL (config.py `_detect_ephemeral_platform`); escape explícito
+  ALLOW_EPHEMERAL_DB=true só p/ descartável. +4 testes (tests/core/test_config_guard.py).
+- D026 ACTIVE: boot loga fingerprint sha256[:8] de SECRET_KEY/PEPPER (NÃO-reversível) via
+  _log_boot_fingerprint (main.py) + basicConfig(INFO). Se a fp mudar entre deploys, a chave
+  não está fixa = causa de "caiu todo mundo". Nunca loga o segredo em si.
+- I017 (=I011/I016, RECORRÊNCIA): ao chegar, o working tree tinha ~20 arquivos TRUNCADOS no
+  disco (main.py@116, config.py, connection.py, requirements.txt@1L, tokens.py, schemas.py,
+  +6 do frontend). master ÍNTEGRO e atual (commit 4560ffc). Recuperação: `git archive master`
+  p/ FS local, validar (217 testes OK), restaurar cada truncado via `cp`+md5 em loop
+  (Edit/open() truncam no virtiofs; cp+verificação md5 gruda). Entrega = PATCH sobre master.
+- NEXT [USER] (Cloud Run, resolve o logout): setar DATABASE_URL (Supabase) + SECRET_KEY/PEPPER
+  FIXOS no Secret Manager + `--min/max-instances 1`; aplicar futebolao-remember-me.patch sobre
+  master (`git restore .` antes, limpa truncamentos); commit+push. Guia: README "Deploy: Google Cloud Run".
+
+## Rodada 19 — sessão grudenta (fim do logout falso) (2026-06-21)
+- [USER] sintoma: pessoas (e o próprio dono) deslogadas em horas imprevisíveis, mesmo
+  com DATABASE_URL+SECRET_KEY fixos no Supabase. Tentativa anterior (aumentar tempo de
+  cookie) não resolveu — nada expira; o servidor é que RECUSAVA o refresh.
+- Causa-raiz: rotate() rejeitava reuso de refresh já rotacionado após 60s (REUSE_GRACE).
+  Reuso tardio é comum e legítimo: celular dormindo, resposta de rede perdida, cold start
+  do Cloud Run, várias abas → "sessão expirada" falsa. E o api.js desistia na 1ª falha de
+  refresh (sem retry) → logout em qualquer 429/5xx/oscilação.
+- D027 ACTIVE (supersede D004/I014): renovação TOLERANTE. rotate() re-emite enquanto a
+  LINHA do refresh existir e não expirou — token rotacionado NÃO desloga. Só rejeita quando
+  a linha foi APAGADA (kill real) ou o refresh expirou. REUSE_GRACE_SECONDS removido.
+- D028 ACTIVE: kills reais agora APAGAM a linha (delete), não só revogam. logout já fazia
+  delete; admin_reset_password (api/admin.py) e cli reset-password trocaram
+  revoke_all_for_user→delete_all_for_user → troca de senha encerra TODAS as sessões na hora.
+  REFRESH_TTL 30d→90d; ACCESS fica 15min.
+- Frontend: api.js tryRefresh com retry/backoff (400/1200/3000ms) p/ rede/429/5xx; desiste
+  só em 401/403. +1 teste node (api.test.js). test_tokens.py reescrito (reuso tardio re-emite;
+  logout/troca de senha rejeitam). Suítes: 218 core + 68 front, zero falhas.
+- Troca de segurança ACEITA [USER]: refresh válido por mais tempo (detecção de replay
+  relaxada); logout e troca de senha encerram na hora. Bloat: linhas revogadas acumulam
+  (lookup por PK, perf ok); purge_expired disponível p/ limpeza futura [follow-up menor].
+- Entrega: futebolao-remember-me.patch agora cobre TUDO (10 arquivos). Aplicar sobre master
+  limpo (`git restore .` antes) + commit + push.

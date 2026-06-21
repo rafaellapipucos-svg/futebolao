@@ -61,6 +61,41 @@ O plano Starter elimina isso.
 banco é o Supabase). **Docker local**: `cp .env.example .env` (preencha
 segredos; DATABASE_URL vazio = SQLite) e `docker compose up --build`.
 
+## Deploy: Google Cloud Run
+
+O disco do Cloud Run e **efemero** — some a cada deploy e a cada cold start. Logo
+o banco **tem que ser externo** (Supabase) e os segredos **fixos** no Secret
+Manager; senao cada deploy zera contas, apostas e sessoes (todo mundo reloga). O
+boot agora **recusa** subir no Cloud Run sem `DATABASE_URL` (trava em `config.py`;
+escape so p/ teste descartavel: `ALLOW_EPHEMERAL_DB=true`).
+
+1. **Supabase** — a mesma connection string do passo do Render (Session Pooler,
+   porta 5432).
+2. **Segredos fixos** — gere UMA vez e nunca troque (trocar `SECRET_KEY` desloga
+   todo mundo; trocar `PEPPER` quebra TODAS as senhas):
+   ```bash
+   python3 -c "import secrets;print(secrets.token_urlsafe(48))" | tr -d '\n' \
+     | gcloud secrets create SECRET_KEY --data-file=-
+   python3 -c "import secrets;print(secrets.token_urlsafe(48))" | tr -d '\n' \
+     | gcloud secrets create PEPPER --data-file=-
+   printf '%s' 'postgresql://...supabase...' \
+     | gcloud secrets create DATABASE_URL --data-file=-
+   ```
+3. **Deploy** referenciando os segredos:
+   ```bash
+   gcloud run deploy futebolao --source . --region southamerica-east1 \
+     --min-instances 1 --max-instances 1 --allow-unauthenticated \
+     --set-secrets SECRET_KEY=SECRET_KEY:latest,PEPPER=PEPPER:latest,DATABASE_URL=DATABASE_URL:latest \
+     --set-env-vars COOKIE_SECURE=true,PUBLIC_BASE_URL=https://SEU-SERVICO.run.app,ADMIN_EMAILS=seu@email
+   ```
+   `--max-instances 1` e obrigatorio: SSE, rate-limit e cache do ranking vivem na
+   memoria do processo. `--min-instances 1` mantem o poller de placares de pe e
+   evita cold start (a **sessao** sobrevive ao cold start de qualquer jeito — ela
+   vive no Supabase + cookie; quem nao sobrevive e o poller e os caches em memoria).
+4. Nos logs do boot, confira a linha `boot fingerprints: SECRET_KEY=... PEPPER=...`:
+   se o fingerprint **mudar** entre dois deploys, a chave nao esta fixa — e essa a
+   causa de "caiu todo mundo no deploy".
+
 ## Testes
 
 ```bash
@@ -98,8 +133,7 @@ recalcula o chaveamento. CLI usa o mesmo `DATABASE_URL` do ambiente.
 
 ## Segurança (resumo)
 
-bcrypt+pepper (custo 12), JWT HS256 com refresh rotacionado/revogável (reuso
-revoga a família), cookies HttpOnly SameSite=Lax Secure, CSRF double-submit,
+bcrypt+pepper (custo 12), JWT HS256 com sessão de 90 dias e renovação tolerante (logout e troca de senha encerram na hora), cookies HttpOnly SameSite=Lax Secure, CSRF double-submit,
 rate limiting por IP/escopo, SQL 100% parametrizado (scan AST no CI) com
 tradução de placeholders no adapter, uploads re-codificados via Pillow direto
 para o banco, CSP sem CDNs, HSTS. Detalhes: ARCHITECTURE.md §7 e TESTPLAN.md.

@@ -1,10 +1,12 @@
-"""Sessões: access token curto + refresh token rotacionado e revogável.
+"""Sessões: access token curto + refresh com renovação TOLERANTE.
 
-Reuso de um refresh já rotacionado: dentro de REUSE_GRACE_SECONDS é tratado como
-corrida benigna (multi-aba/retry) e só emite um novo par; depois da janela, o
-token é rejeitado (o aparelho re-loga sozinho) SEM derrubar as outras sessões.
-(Rodada 16, I014 — antes revogava a família inteira; mudou p/ evitar logout em
-massa.)
+A sessão é "grudenta" de propósito (bolão de amigos): enquanto a LINHA do refresh
+existir no banco e não tiver expirado, `rotate` re-emite um novo par — mesmo que o
+token apresentado já tenha sido rotacionado. Isso elimina o logout falso por reuso
+tardio: celular dormindo, resposta de rede perdida, cold start do Cloud Run, várias
+abas. Só re-loga de verdade quando a sessão é ENCERRADA de propósito — logout e
+troca de senha APAGAM a linha (delete) — ou quando o refresh expira (90 dias).
+(D027/D028; supersede a janela de graça de I014/REUSE_GRACE_SECONDS.)
 """
 from __future__ import annotations
 
@@ -18,11 +20,7 @@ from ..db.repos import tokens as tokens_repo
 from . import jwt_hs256
 
 ACCESS_TTL_SECONDS = 15 * 60
-REFRESH_TTL_SECONDS = 30 * 24 * 3600
-# Tolerância p/ reuso de refresh LOGO após a rotação: cobre corridas benignas
-# (várias abas / retry de rede renovando juntas) sem derrubar a sessão. Reuso
-# DEPOIS dessa janela = rejeita SÓ este token (não derruba a família). (I014)
-REUSE_GRACE_SECONDS = 60
+REFRESH_TTL_SECONDS = 90 * 24 * 3600  # 90 dias: cobre a Copa toda com folga (D028)
 
 
 class TokenInvalidError(ValueError):
@@ -61,6 +59,11 @@ def verify_access(token: str, secret: str) -> int:
 
 
 def rotate(conn: Db, refresh_token: str, secret: str) -> Tuple[int, TokenPair]:
+    """Renova a sessão de forma TOLERANTE (ver docstring do módulo).
+
+    Re-emite enquanto a linha existir e não expirou; rejeita só quando a linha foi
+    APAGADA (logout / troca de senha = kill real) ou quando o refresh expirou.
+    """
     try:
         payload = jwt_hs256.verify(refresh_token, secret, expected_typ="refresh")
     except jwt_hs256.JwtError as exc:
@@ -69,20 +72,14 @@ def rotate(conn: Db, refresh_token: str, secret: str) -> Tuple[int, TokenPair]:
     user_id = int(payload["sub"])
     if not isinstance(jti, str):
         raise TokenInvalidError("refresh sem jti")
-    if not tokens_repo.is_active(conn, jti):
-        row = tokens_repo.get(conn, jti)
-        if row is not None and row["revoked_at"] is not None:
-            revoked_at = datetime.fromisoformat(row["revoked_at"])
-            age = (datetime.now(timezone.utc) - revoked_at).total_seconds()
-            if age <= REUSE_GRACE_SECONDS:
-                # Corrida benigna (multi-aba/retry) logo após rotação: NÃO revoga
-                # a família — só emite um novo par. Acaba com o logout frequente.
-                return user_id, issue_pair(conn, user_id, secret)
-            # Reuso tardio de um token já rotacionado: rejeita SÓ este token (o
-            # aparelho re-loga sozinho); NÃO derruba os outros dispositivos.
-            raise TokenInvalidError("sessão expirada, entre novamente")
-        raise TokenInvalidError("refresh inválido ou expirado")
-    tokens_repo.revoke(conn, jti)
+    row = tokens_repo.get(conn, jti)
+    if row is None:
+        raise TokenInvalidError("sessão encerrada, entre novamente")
+    if datetime.fromisoformat(row["expires_at"]) <= datetime.now(timezone.utc):
+        raise TokenInvalidError("sessão expirada, entre novamente")
+    if row["revoked_at"] is None:
+        tokens_repo.revoke(conn, jti)  # 1º uso deste token: rotaciona
+    # Reuso tardio de um token já rotacionado NÃO desloga — re-emite par novo.
     return user_id, issue_pair(conn, user_id, secret)
 
 
@@ -90,7 +87,7 @@ def revoke_refresh(conn: Db, refresh_token: str, secret: str) -> None:
     try:
         payload = jwt_hs256.verify(refresh_token, secret, expected_typ="refresh", leeway_seconds=0)
     except jwt_hs256.JwtError:
-        return  # logout com token inválido/expirado: nada a revogar
+        return  # logout com token inválido/expirado: nada a apagar
     jti = payload.get("jti")
     if isinstance(jti, str):
-        tokens_repo.delete(conn, jti)  # logout: apaga de vez (não cai na graça de reuso)
+        tokens_repo.delete(conn, jti)  # logout: APAGA a linha (kill real)

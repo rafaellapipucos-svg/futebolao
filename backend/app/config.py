@@ -58,6 +58,22 @@ class Settings:
         return str(self.data_dir / "bolao.db")
 
 
+# Plataformas de disco efemero (serverless): o FS do container e recriado a cada
+# deploy E a cada cold start. Sem banco externo (DATABASE_URL) o SQLite local some
+# junto — apaga contas, apostas e sessoes (refresh tokens vivem no banco). (D025)
+_EPHEMERAL_MARKERS = {
+    "K_SERVICE": "Google Cloud Run",  # Cloud Run sempre define K_SERVICE
+}
+
+
+def _detect_ephemeral_platform(env: dict) -> Optional[str]:
+    """Nome da plataforma efemera detectada via env, ou None (dev/dedicado)."""
+    for marker, name in _EPHEMERAL_MARKERS.items():
+        if env.get(marker):
+            return name
+    return None
+
+
 def load_settings(env: Optional[dict] = None) -> Settings:
     if env is None:
         _load_dotenv(Path(".env"))
@@ -82,6 +98,15 @@ def load_settings(env: Optional[dict] = None) -> Settings:
                 f"'{database_url[:16]}...')"
             )
 
+    ephemeral = _detect_ephemeral_platform(env)
+    if ephemeral and not database_url:
+        if env.get("ALLOW_EPHEMERAL_DB", "").lower() not in ("1", "true", "yes"):
+            raise RuntimeError(
+                f"Detectado {ephemeral} (disco efemero) SEM DATABASE_URL: o SQLite "
+                "local some a cada deploy/cold start — apaga contas, apostas e sessoes "
+                "(todos relogam). Configure DATABASE_URL (Postgres/Supabase). Apenas "
+                "para ambiente descartavel: ALLOW_EPHEMERAL_DB=true."
+            )
     data_dir = Path(env.get("DATA_DIR", "./data"))
     admin_emails = {
         e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()

@@ -1,6 +1,7 @@
 """App factory FastAPI: wiring de routers, estaticos, seguranca e ciclo de vida."""
 from __future__ import annotations
 
+import hashlib
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -10,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api import admin, auth, bets, game, meta, oauth, profile, sse, users
-from .config import load_settings
+from .config import Settings, load_settings
 from .core.ratelimit import default_limiter
 from .db.connection import connect
 from .db.schema import init_db
@@ -35,8 +36,27 @@ SECURITY_HEADERS = {
 }
 
 
+def _fingerprint(secret: str) -> str:
+    """sha256[:8] — derivado nao-reversivel, seguro p/ log (nunca o segredo)."""
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()[:8]
+
+
+def _log_boot_fingerprint(settings: Settings) -> None:
+    # Se a fp de SECRET_KEY/PEPPER mudar entre deploys, todo JWT/refresh perde a
+    # validade e o pessoal reloga (e trocar PEPPER quebra TODOS os logins). Visivel
+    # nos logs do Cloud Run p/ diagnosticar "caiu todo mundo no deploy".
+    db = "postgres" if settings.uses_postgres else "sqlite-LOCAL(efemero se serverless)"
+    log.info(
+        "boot fingerprints: SECRET_KEY=%s PEPPER=%s db=%s "
+        "(fp estavel entre deploys => sessoes preservadas)",
+        _fingerprint(settings.secret_key), _fingerprint(settings.pepper), db,
+    )
+
+
 def create_app() -> FastAPI:
+    logging.basicConfig(level=logging.INFO)
     settings = load_settings()
+    _log_boot_fingerprint(settings)
     if not settings.uses_postgres:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
 

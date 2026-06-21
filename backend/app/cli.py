@@ -54,7 +54,7 @@ def cmd_reset_password(settings, args) -> int:
     password = args.password or getpass.getpass("nova senha: ")
     validate_password_strength(password)
     users_repo.set_password(conn, user["id"], hash_password(password, settings.pepper))
-    tokens_repo.revoke_all_for_user(conn, user["id"])
+    tokens_repo.delete_all_for_user(conn, user["id"])
     print("senha redefinida e sessões revogadas")
     return 0
 
