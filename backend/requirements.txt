@@ -1,7 +1,11 @@
-fastapi==0.115.*
-uvicorn[standard]==0.34.*
+# Versões EXATAS (M5) para build reproduzível — um rebuild meses depois não pode
+# puxar um minor/patch novo e quebrar o deploy. Para travar também as transitivas
+# com hashes, gere o lock 1x: `make lock` (pip-compile) → requirements.lock.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
 python-multipart==0.0.20
-bcrypt==4.*
-requests==2.*
-Pillow==11.*
-psycopg[binary]==3.2.*
+bcrypt==4.2.1
+requests==2.32.3
+Pillow==11.0.0
+psycopg[binary]==3.2.3
+psycopg-pool==3.2.4

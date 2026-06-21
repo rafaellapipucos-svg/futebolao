@@ -51,28 +51,6 @@ export function countdown(toIso, nowMs = Date.now()) {
   return `${s}s`;
 }
 
-export function minuteLabel(status, minute) {
-  if (status !== 'live') return '';
-  if (minute == null) return 'AO VIVO';
-  return `${minute}′`;
-}
-
-// Minuto do jogo AO VIVO. Prefere o minuto do servidor (provider/admin); sem
-// ele, ESTIMA pelo relógio desde o apito (considera ~15min de intervalo).
-// Aproximação suficiente para exibir "23'", "Intervalo", "78'", "90+'".
-export function liveMinute(kickoffIso, serverMinute = null, nowMs = Date.now()) {
-  if (serverMinute != null) return `${serverMinute}'`;
-  const start = new Date(kickoffIso).getTime();
-  if (Number.isNaN(start)) return 'AO VIVO';
-  const elapsed = Math.floor((nowMs - start) / 60000);
-  if (elapsed < 0) return 'AO VIVO';
-  if (elapsed <= 45) return `${Math.max(1, elapsed)}'`;
-  if (elapsed <= 60) return 'Intervalo';
-  if (elapsed <= 105) return `${Math.min(90, elapsed - 15)}'`;
-  if (elapsed <= 130) return "90+'";
-  return 'AO VIVO';
-}
-
 // "base+X" quando o relógio passa do fim de um tempo (acréscimos); senão o
 // minuto corrente. base = 45 (1º T), 90 (2º T), 105 (1º T prorrog.), 120 (2º T).
 function _periodPlus(base, minute, stoppage) {

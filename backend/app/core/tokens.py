@@ -1,7 +1,10 @@
 """Sessões: access token curto + refresh token rotacionado e revogável.
 
-Reuso de refresh já rotacionado = roubo provável ⇒ revoga TODAS as sessões
-do usuário (detecção de replay).
+Reuso de um refresh já rotacionado: dentro de REUSE_GRACE_SECONDS é tratado como
+corrida benigna (multi-aba/retry) e só emite um novo par; depois da janela, o
+token é rejeitado (o aparelho re-loga sozinho) SEM derrubar as outras sessões.
+(Rodada 16, I014 — antes revogava a família inteira; mudou p/ evitar logout em
+massa.)
 """
 from __future__ import annotations
 
@@ -18,15 +21,11 @@ ACCESS_TTL_SECONDS = 15 * 60
 REFRESH_TTL_SECONDS = 30 * 24 * 3600
 # Tolerância p/ reuso de refresh LOGO após a rotação: cobre corridas benignas
 # (várias abas / retry de rede renovando juntas) sem derrubar a sessão. Reuso
-# DEPOIS dessa janela = replay/roubo ⇒ revoga tudo. (Rodada 16, I014)
+# DEPOIS dessa janela = rejeita SÓ este token (não derruba a família). (I014)
 REUSE_GRACE_SECONDS = 60
 
 
 class TokenInvalidError(ValueError):
-    pass
-
-
-class TokenReuseError(TokenInvalidError):
     pass
 
 

@@ -131,6 +131,22 @@ class Bet:
     updated_at: datetime
 
 
+@dataclass(frozen=True)
+class ScoreDetails:
+    """Campos OPCIONAIS de um placar (relógio ao vivo + mata-mata) agrupados, para
+    set_score não carregar uma lista longa de parâmetros (B5). O placar em si
+    (home_score/away_score/status) e as flags (force/set_lock) ficam fora — são
+    dados obrigatórios e controle, não detalhes."""
+    minute: Optional[int] = None
+    winner_team_id: Optional[int] = None
+    period: Optional[str] = None
+    stoppage: Optional[int] = None
+    home_pens: Optional[int] = None
+    away_pens: Optional[int] = None
+    pens_log: Optional[str] = None
+    period_started_at: Optional[str] = None
+
+
 GROUPS = "ABCDEFGHIJKL"
 
 # Slots da Annex C na ordem das colunas oficiais e seus jogos do R32.

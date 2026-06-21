@@ -23,6 +23,13 @@ def get_settings(request: Request):
 
 
 def get_db(request: Request) -> Iterator[Db]:
+    pool = getattr(request.app.state, "db_pool", None)
+    if pool is not None:  # produção (A2): pega uma conexão do pool e devolve no fim
+        import psycopg
+
+        with pool.connection() as raw:
+            yield Db(raw, "postgres", (psycopg.IntegrityError,))
+        return
     conn = connect(request.app.state.settings.db_target)
     try:
         yield conn

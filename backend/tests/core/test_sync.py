@@ -87,6 +87,17 @@ class TestSync(unittest.TestCase):
         self.assertEqual(changed, 1)
         self.assertEqual(matches_repo.by_id(self.conn, 1).home_score, 2)
 
+    def test_nao_casa_sem_codigos_fortes(self):
+        # M2: sem external_id conhecido E sem os 2 códigos, NÃO casa por
+        # proximidade de horário (no mata-mata, jogos do mesmo dia caem na
+        # janela; adivinhar atribuiria o placar ao jogo errado).
+        changed = apply_updates(self.conn, [upd(
+            external_id="fd-anon", home_code=None, away_code=None,
+            home_score=3, away_score=3,
+        )])
+        self.assertEqual(changed, 0)
+        self.assertIsNone(matches_repo.by_id(self.conn, 1).home_score)
+
 
 class TestPollerWindow(unittest.TestCase):
     def setUp(self):

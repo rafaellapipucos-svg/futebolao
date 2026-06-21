@@ -2,7 +2,7 @@ import unittest
 
 from app.db.repos import matches as matches_repo
 from app.db.schema import get_data_version
-from app.domain.entities import MatchStatus
+from app.domain.entities import MatchStatus, ScoreDetails
 from app.services.results import ResultError, reset_match, set_score
 
 from .db_helper import seeded_db, team_id_by_code
@@ -16,8 +16,8 @@ class TestResultsService(unittest.TestCase):
         self.conn.close()
 
     def test_fluxo_scheduled_live_finished(self):
-        set_score(self.conn, 1, 0, 0, MatchStatus.LIVE, minute=1)
-        set_score(self.conn, 1, 1, 0, MatchStatus.LIVE, minute=44)
+        set_score(self.conn, 1, 0, 0, MatchStatus.LIVE, details=ScoreDetails(minute=1))
+        set_score(self.conn, 1, 1, 0, MatchStatus.LIVE, details=ScoreDetails(minute=44))
         set_score(self.conn, 1, 2, 0, MatchStatus.FINISHED)
         m = matches_repo.by_id(self.conn, 1)
         self.assertEqual((m.home_score, m.away_score, m.status), (2, 0, MatchStatus.FINISHED))
@@ -45,11 +45,12 @@ class TestResultsService(unittest.TestCase):
         matches_repo.set_teams(self.conn, 73, mex, can)
         with self.assertRaises(ResultError):
             set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED)
-        set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED, winner_team_id=can)
+        set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
+                  details=ScoreDetails(winner_team_id=can))
         self.assertEqual(matches_repo.by_id(self.conn, 73).winner_id(), can)
         with self.assertRaises(ResultError):
-            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
-                      winner_team_id=9999, force=True)
+            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED, force=True,
+                      details=ScoreDetails(winner_team_id=9999))
 
     def test_bump_versao_e_reset(self):
         v0 = get_data_version(self.conn)

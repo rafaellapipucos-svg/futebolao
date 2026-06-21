@@ -1,13 +1,14 @@
 """Aplicação de placares/resultados (admin e provider) com transições válidas."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Optional
 
 from ..db.connection import tx
 from ..db.repos import matches as matches_repo
 from ..db.schema import bump_data_version
-from ..domain.entities import LIVE_PERIODS, MatchStatus, Stage
+from ..domain.entities import LIVE_PERIODS, MatchStatus, ScoreDetails, Stage
 from .live_bus import bus
 from ..db.connection import Db
 
@@ -22,35 +23,52 @@ class ResultError(Exception):
     pass
 
 
+def _validate_pens_log(pens_log: str) -> None:
+    """pens_log é JSON: lista de [team, scored] na ordem das cobranças.
+    Ex.: [["home", true], ["away", false]]. Inválido derruba (fail loud)."""
+    try:
+        parsed = json.loads(pens_log)
+    except (ValueError, TypeError) as exc:
+        raise ResultError("pens_log inválido: JSON malformado") from exc
+    if not isinstance(parsed, list):
+        raise ResultError("pens_log deve ser uma lista de cobranças")
+    for kick in parsed:
+        if (not isinstance(kick, list) or len(kick) != 2
+                or kick[0] not in ("home", "away")
+                or not isinstance(kick[1], bool)):
+            raise ResultError(
+                'cada cobrança do pens_log deve ser ["home"|"away", true|false]'
+            )
+
+
 def set_score(
     conn: Db,
     match_id: int,
     home_score: int,
     away_score: int,
     status: MatchStatus,
-    minute: Optional[int] = None,
-    winner_team_id: Optional[int] = None,
+    *,
     force: bool = False,
     set_lock: Optional[bool] = None,
-    period: Optional[str] = None,
-    stoppage: Optional[int] = None,
-    home_pens: Optional[int] = None,
-    away_pens: Optional[int] = None,
-    pens_log: Optional[str] = None,
-    period_started_at: Optional[str] = None,
+    details: Optional[ScoreDetails] = None,
 ) -> None:
+    """Aplica um placar. `details` (ScoreDetails) carrega os campos opcionais
+    (minuto, vencedor, período, acréscimo, pênaltis); force/set_lock são flags."""
+    d = details or ScoreDetails()
     for v in (home_score, away_score):
         if not isinstance(v, int) or isinstance(v, bool) or not 0 <= v <= 99:
             raise ResultError("placar deve ser inteiro entre 0 e 99")
-    if minute is not None and not 0 <= minute <= 130:
+    if d.minute is not None and not 0 <= d.minute <= 130:
         raise ResultError("minuto inválido")
-    if period is not None and period not in LIVE_PERIODS:
-        raise ResultError(f"período inválido: {period!r}")
-    if stoppage is not None and not 0 <= stoppage <= 30:
+    if d.period is not None and d.period not in LIVE_PERIODS:
+        raise ResultError(f"período inválido: {d.period!r}")
+    if d.stoppage is not None and not 0 <= d.stoppage <= 30:
         raise ResultError("acréscimo inválido")
-    for v in (home_pens, away_pens):
+    for v in (d.home_pens, d.away_pens):
         if v is not None and (not isinstance(v, int) or isinstance(v, bool) or not 0 <= v <= 99):
             raise ResultError("pênaltis devem ser inteiros entre 0 e 99")
+    if d.pens_log is not None:
+        _validate_pens_log(d.pens_log)
 
     with tx(conn):
         match = matches_repo.by_id(conn, match_id)
@@ -66,20 +84,21 @@ def set_score(
             status == MatchStatus.FINISHED
             and match.stage != Stage.GROUP
             and home_score == away_score
-            and winner_team_id is None
+            and d.winner_team_id is None
         ):
             raise ResultError(
                 "mata-mata empatado exige winner_team_id (pênaltis/prorrogação)"
             )
-        if winner_team_id is not None and winner_team_id not in (
+        if d.winner_team_id is not None and d.winner_team_id not in (
             match.home_team_id, match.away_team_id
         ):
             raise ResultError("winner_team_id deve ser um dos times da partida")
 
         matches_repo.set_score(
-            conn, match_id, home_score, away_score, status.value, minute, winner_team_id,
-            period=period, stoppage=stoppage, home_pens=home_pens,
-            away_pens=away_pens, pens_log=pens_log, period_started_at=period_started_at,
+            conn, match_id, home_score, away_score, status.value, d.minute,
+            d.winner_team_id, period=d.period, stoppage=d.stoppage,
+            home_pens=d.home_pens, away_pens=d.away_pens, pens_log=d.pens_log,
+            period_started_at=d.period_started_at,
         )
         if set_lock is not None:
             matches_repo.set_manual_lock(conn, match_id, set_lock)

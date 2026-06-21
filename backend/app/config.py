@@ -86,16 +86,34 @@ def load_settings(env: Optional[dict] = None) -> Settings:
     admin_emails = {
         e.strip().lower() for e in env.get("ADMIN_EMAILS", "").split(",") if e.strip()
     }
+    public_base_url = env.get("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+    cookie_secure = env.get("COOKIE_SECURE", "false").lower() in ("1", "true", "yes")
+    # Produção (DATABASE_URL definido ⇒ Cloud Run/Render/etc.): sem fallback
+    # silencioso (M3). PUBLIC_BASE_URL errada quebra o redirect do OAuth; cookie
+    # sem Secure trafega a sessão sem proteção. Falhe no boot, não em silêncio.
+    if database_url:
+        raw_base = env.get("PUBLIC_BASE_URL", "").strip()
+        if not raw_base or "localhost" in raw_base or raw_base.startswith("http://"):
+            raise RuntimeError(
+                "PUBLIC_BASE_URL obrigatória em produção (https://seu-dominio): com "
+                "DATABASE_URL definido, o redirect do OAuth e os cookies dependem "
+                "dela. Não use localhost nem http://."
+            )
+        if not cookie_secure:
+            raise RuntimeError(
+                "COOKIE_SECURE deve ser 'true' em produção (DATABASE_URL definido): "
+                "o serviço é HTTPS; cookies de sessão exigem Secure + HSTS."
+            )
     return Settings(
         secret_key=secret_key,
         pepper=pepper,
         data_dir=data_dir,
         database_url=database_url,
-        public_base_url=env.get("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/"),
+        public_base_url=public_base_url,
         admin_emails=admin_emails,
         invite_code=env.get("INVITE_CODE") or None,
         google_client_id=env.get("GOOGLE_CLIENT_ID") or None,
         google_client_secret=env.get("GOOGLE_CLIENT_SECRET") or None,
         football_data_token=env.get("FOOTBALL_DATA_TOKEN") or None,
-        cookie_secure=env.get("COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
+        cookie_secure=cookie_secure,
     )

@@ -44,9 +44,6 @@ NAME_ALIASES: Dict[str, str] = {
     "Panama": "PAN",
 }
 
-# TLAs da football-data que diferem do código FIFA.
-TLA_FIXES = {"KOR": "KOR", "SUI": "SUI", "URU": "URU"}
-
 
 def _default_http_get(url: str, token: str) -> Dict:
     import requests
@@ -64,33 +61,27 @@ def team_code(team: Optional[Dict]) -> Optional[str]:
         return NAME_ALIASES[name]
     tla = team.get("tla")
     if tla:
-        return TLA_FIXES.get(tla, tla)
+        return tla
     return None
 
 
 def _score_pair(score: Dict) -> tuple:
-    """Placar que VALE para a aposta (Rodada 16): o do FIM DA PRORROGAÇÃO,
-    antes dos pênaltis = `fullTime` (já inclui a prorrogação). Em jogo decidido
-    no tempo normal, fullTime == placar dos 90min. Pênaltis ficam em `penalties`."""
+    """Placar que VALE para a aposta: o do FIM DA PRORROGAÇÃO (antes dos pênaltis).
+
+    ATENÇÃO (doc oficial "Dealing with scores", v4): `fullTime` SOMA os pênaltis —
+    `fullTime = regularTime + extraTime + penalties`. Ex. da doc: ET 1x1 e pênaltis
+    6x5 viram `fullTime 7x6`. Logo, quando houve disputa de pênaltis, subtraímos o
+    tally do shootout para obter o placar ao fim da prorrogação (= regularTime +
+    extraTime). Sem pênaltis, `fullTime` já é o placar do tempo normal/prorrogação."""
     full = score.get("fullTime") or {}
-    return full.get("home"), full.get("away")
-
-
-def _derive_period(
-    raw_status: str, duration: Optional[str], minute: Optional[int]
-) -> Optional[str]:
-    """Fase do relógio (heurística sobre status+duration+minuto da football-data)."""
-    if raw_status in ("FINISHED", "AWARDED"):
-        return "FT"
-    if raw_status == "PAUSED":
-        return "ET_HT" if duration == "EXTRA_TIME" else "HT"
-    if raw_status in ("IN_PLAY", "SUSPENDED"):
-        if duration == "PENALTY_SHOOTOUT":
-            return "PENS"
-        if duration == "EXTRA_TIME":
-            return "ET2" if (minute is not None and minute > 105) else "ET1"
-        return "2H" if (minute is not None and minute > 45) else "1H"
-    return None
+    home, away = full.get("home"), full.get("away")
+    pens = score.get("penalties") or {}
+    ph, pa = pens.get("home"), pens.get("away")
+    if isinstance(home, int) and isinstance(ph, int):
+        home -= ph
+    if isinstance(away, int) and isinstance(pa, int):
+        away -= pa
+    return home, away
 
 
 def parse_match(raw: Dict) -> ScoreUpdate:
@@ -122,7 +113,6 @@ def parse_match(raw: Dict) -> ScoreUpdate:
         away_score=away_score if isinstance(away_score, int) else None,
         minute=minute,
         winner_code=winner_code,
-        period=_derive_period(raw.get("status", ""), score.get("duration"), minute),
         home_pens=home_pens if isinstance(home_pens, int) else None,
         away_pens=away_pens if isinstance(away_pens, int) else None,
         paused=raw.get("status") == "PAUSED",

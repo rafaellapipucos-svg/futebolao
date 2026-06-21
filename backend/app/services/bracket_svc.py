@@ -7,11 +7,11 @@ from ..db.repos import matches as matches_repo
 from ..db.repos import teams as teams_repo
 from ..domain import clinch as clinch_mod
 from ..domain.bracket import build_context, resolve_all
-from ..domain.entities import GROUPS, STAGE_LABELS_PT, Stage
+from ..domain.entities import GROUPS, STAGE_LABELS_PT, MatchStatus, Stage
 from ..domain.standings import compute_group
 from ..domain.thirds import allocate, qualified_thirds
 from ..seed.loader import load_annex_c_table
-from ..db.connection import Db
+from ..db.connection import Db, tx
 
 _ANNEX_CACHE: Optional[dict] = None
 
@@ -59,6 +59,25 @@ def persist_resolutions(conn: Db) -> int:
     return changed
 
 
+def rebuild_bracket(conn: Db) -> int:
+    """Recalcula o chaveamento DO ZERO (A3): limpa os times dos confrontos de
+    mata-mata ainda NÃO disputados (status 'scheduled') e re-propaga a partir dos
+    grupos e dos jogos já encerrados. Jogos live/finished preservam seus times
+    (integridade do placar). Corrige a contaminação quando um resultado de KO já
+    propagado é alterado — supersede o comportamento conservador de D012 quando o
+    admin pede o recálculo. Atômico (uma transação). Retorna nº de mudanças."""
+    with tx(conn):
+        cleared = 0
+        for m in matches_repo.all_matches(conn):
+            if m.stage == Stage.GROUP or m.status != MatchStatus.SCHEDULED:
+                continue
+            if m.home_team_id is not None or m.away_team_id is not None:
+                matches_repo.set_teams(conn, m.id, None, None)
+                cleared += 1
+        resolved = persist_resolutions(conn)
+    return cleared + resolved
+
+
 def source_label(source: str) -> str:
     if source.startswith("3:"):
         return "3º (" + "/".join(source[2:]) + ")"
@@ -69,37 +88,6 @@ def source_label(source: str) -> str:
     if len(source) == 2 and source[0] in "12":
         return f"{source[0]}º do Grupo {source[1]}"
     return source
-
-
-def bracket_payload(conn: Db) -> List[Dict]:
-    teams = teams_repo.all_teams(conn)
-
-    def side(team_id: Optional[int], source: str) -> Dict:
-        if team_id is not None and team_id in teams:
-            t = teams[team_id]
-            return {"team": {"id": t.id, "code": t.code, "name": t.name, "flag": t.flag},
-                    "label": None}
-        return {"team": None, "label": source_label(source)}
-
-    out: List[Dict] = []
-    for m in matches_repo.all_matches(conn):
-        if m.stage == Stage.GROUP:
-            continue
-        out.append({
-            "id": m.id,
-            "stage": m.stage.value,
-            "stage_label": STAGE_LABELS_PT[m.stage],
-            "kickoff_utc": m.kickoff_utc.isoformat(),
-            "venue": m.venue,
-            "status": m.status.value,
-            "minute": m.minute,
-            "home": side(m.home_team_id, m.home_source),
-            "away": side(m.away_team_id, m.away_source),
-            "home_score": m.home_score,
-            "away_score": m.away_score,
-            "winner_team_id": m.winner_id(),
-        })
-    return out
 
 
 def _provisional_third_assignment(conn: Db) -> Optional[Dict[str, int]]:

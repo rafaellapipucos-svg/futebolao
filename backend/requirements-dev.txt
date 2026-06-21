@@ -1,5 +1,7 @@
 -r requirements.txt
-pytest==8.*
-pytest-timeout==2.*
-httpx==0.28.*
-anyio==4.*
+# Versões EXATAS (M5) — ferramentas de teste; o gate do Docker depende delas.
+pytest==8.3.4
+pytest-timeout==2.3.1
+httpx==0.28.1
+anyio==4.7.0
+pip-tools==7.4.1

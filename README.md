@@ -20,7 +20,8 @@ Admins ganham aba própria: placar manual, lock anti-API, sync e usuários.
 
 **Pontuação**: resultado certo = 1 pt; placar exato = 3 pts. Multiplicadores:
 grupos ×1, 16 avos ×2, oitavas ×3, quartas ×4, semis ×5, 3º lugar ×5, final ×10.
-Mata-mata vale o placar dos 90 minutos (empate é resultado válido).
+Mata-mata vale o placar ao **fim da prorrogação** (antes dos pênaltis); empate é
+resultado válido para a aposta e os pênaltis só definem quem avança.
 
 ## Banco de dados
 

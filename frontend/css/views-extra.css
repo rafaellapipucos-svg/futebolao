@@ -53,6 +53,9 @@
   font-size: var(--fs-md); font-weight: 800; line-height: 1;
   padding: 1px 0;
 }
+/* M6: placar de pênaltis sob o confronto (decisão do mata-mata). Só layout —
+   a cor vem do .chip (tokenizado). */
+.bracket-pens { text-align: center; margin-top: 6px; }
 
 /* Linha de time: bandeira/placeholder + nome (truncado, com title) à esquerda,
    placar à direita. Largura controlada para o conteúdo ficar centrado no card. */

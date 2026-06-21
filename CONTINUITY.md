@@ -17,7 +17,8 @@
 - Arquivos de codigo ≤300 LOC; modular. SQL 100% parametrizado (teste AST).
 - Trava de aposta server-side no kickoff, dentro da transacao do upsert.
 - Pontos: resultado=1, cravada=3; mult: G x1, R32 x2, R16 x3, QF x4, SF x5,
-  THIRD x5, FINAL x10. Mata-mata: placar dos 90min.
+  THIRD x5, FINAL x10. Mata-mata: placar do FIM DA PRORROGACAO (antes dos
+  penaltis). [CORRIGIDO 2026-06-21: era "90min", contradizia codigo/UI/PLANO §1.1]
 
 ## Decisions (ADR-lite)
 - D001 ACTIVE: FastAPI + JS vanilla sem build; nucleo testavel stdlib. [USER]
@@ -25,13 +26,18 @@
 - D003 ACTIVE: bcrypt cost12 + pepper HMAC-SHA256 (Argon2 indisponivel).
 - D004 ACTIVE: JWT HS256 stdlib; access 15min + refresh 30d rotacionado/revogavel
   (reuso revoga familia); cookies HttpOnly SameSite=Lax; CSRF double-submit.
-- D005 ACTIVE: aposta em mata-mata = placar dos 90min (empate vale).
+- D005 SUPERSEDED (por PLANO_RODADA16 §1.1, formalizado 2026-06-21): aposta em
+  mata-mata = placar do FIM DA PRORROGACAO, antes dos penaltis (empate vale; os
+  penaltis so definem quem avanca). O texto antigo ("90min") estava errado e
+  contradizia codigo/teste/UI/ARCHITECTURE. _score_pair agora subtrai os penaltis
+  do fullTime (a API football-data SOMA o shootout no fullTime — ver M1/2026-06-21).
 - D006 ACTIVE: THIRD multiplicador x5. [ASSUMPTION documentada no Como Jogar]
 - D007 ACTIVE: aposta so com os 2 times definidos.
 - D008 ACTIVE: 3os = tabela Annex C exata; slots 1o/2o resolvem cedo via clinch
   so-pontos; 3os exigem 12 grupos encerrados.
 - D009 ACTIVE: SSE push de data_version + polling 30s fallback; poller 60s em
-  janela de jogo, 15min fora.
+  janela de jogo, 5min fora (IDLE_INTERVAL=5min no codigo; texto "15min" corrigido
+  2026-06-21 — Rodada 16 reduziu p/ capturar mudanca de horario sem admin).
 - D010 ACTIVE: sem SMTP; INVITE_CODE opcional; reset de senha via admin/CLI.
 - D011 ACTIVE: desempate FIFA pts>SG>GP>h2h; fallback codigo + flag tie_unresolved.
 - D012 ACTIVE: persist_resolutions nunca des-resolve confronto ja propagado
@@ -610,3 +616,72 @@ minuto dentro da fase e seguir 45+X/90+X até o provider mudar o status.
   carimbo) ; node:test **66 OK** (+1: contagem desde o início da fase, sem chutar
   intervalo) ; todo .py do backend parseia ; format.js `node --check` ok.
 - NEXT [USER]: `git add -A && git commit -m "feat(r17): relogio ao vivo dirigido por status (period_started_at, maquina de fase); schema v5" && git push origin master` (deploy Cloud Run). Conferir num jogo ao vivo: 1ºT conta do apito, vira "Intervalo" só quando o provider pausar, 2ºT conta de 45, "90+X" até o apito final.
+
+## Auditoria de más práticas (2026-06-21)
+- 2026-06-21 [TOOL] Revisão crítica integral -> `AUDITORIA_MAS_PRATICAS.md` (raiz).
+- ACHADO CRÍTICO C1 [CODE]: regra do mata-mata CONTRADIZ este ledger. Invariants
+  ("placar dos 90min") + D005 dizem 90min; código/UI/teste usam FIM DA PRORROGAÇÃO
+  (`howtoplay.js:30`, `test_scoring_knock
+## Rodada 17 — correções da auditoria (2026-06-21)
+Decisões do [USER] (3 rodadas de perguntas): C1=fim da prorrogação (corrigir docs);
+C2=pênaltis manuais completos (placar+log); A3=recalcular bracket do zero; A2/A4=pool
++ 1 instância; A1=apagar dead code e reapontar testes; M3=boot fail-fast em prod;
+M5=pin exato+lockfile; refactors=todos (B2/B4/B5); M2=match forte; M6=pênaltis no
+bracket; B6 poller=5min; B1=endurecer adapter.
+
+### DONE + VERIFICADO (suíte core: 212 testes verdes no sandbox)
+- M1 [CODE/BUG REAL achado na verificação]: `_score_pair` usava `fullTime` cru, mas a
+  doc oficial football-data v4 SOMA os pênaltis no fullTime (ET 1x1 + pên 6x5 ⇒
+  fullTime 7x6). Corrigido: fullTime − penalties. Fixtures dos testes (que eram
+  IRREAIS) corrigidos. [web_fetch docs.football-data.org/general/v4/overtime.html]
+- C2 [CODE]: `AdminScoreIn` + endpoint admin aceitam home_pens/away_pens/pens_log;
+  `_validate_pens_log` (fail loud). +2 testes.
+- A3 [CODE]: `bracket_svc.rebuild_bracket` (limpa KO scheduled + re-propaga, atômico);
+  `/api/admin/recompute` e `cli recompute` usam o rebuild. +3 testes (test_bracket_rebuild).
+- M2 [CODE]: `sync._find_local` exige match forte (external_id OU 2 códigos); sem
+  isso pula+loga (não adivinha por "único candidato"). +1 teste.
+- M3 [CODE]: `config.load_settings` derruba o boot se DATABASE_URL presente e
+  PUBLIC_BASE_URL ausente/localhost/http ou COOKIE_SECURE!=true. +4 testes.
+- Dead code: removidos `TokenReuseError` (tokens.py) e `TLA_FIXES` (no-op, football_data).
+- C1/B6/B3 docs: README + ARCHITECTURE(já ok) + invariante; D005 SUPERSEDED; D009=5min;
+  docstrings poller/tokens; .env.example e-mail→placeholder + notas M3.
+
+### NEXT (lote 2 — ainda não feito)
+- B5 DTO em set_score (camada de serviço; repo estável); A2 pool de conexões;
+  B1 adapter (placeholder/DDL split/cursor psycopg2); remover _derive_period+ScoreUpdate.period.
+- Frontend: A1 dead code (mybets.js/renderMatches/renderLive/bracket_payload + reapontar
+  betbox.test/test_bracket_svc/format.test); C2-UI (inputs de pênaltis no admin.js — SEM
+  isso o C2 não é usável end-to-end no modo manual); M6 (pênaltis no bracket.js); M4
+  (unificar em liveClock, remover liveMinute/minuteLabel); B4 (estado de UI → store).
+- M5 deps pin+lock; B2 teste de paridade dos multiplicadores front×back.
+
+### Gate autoritativo (I010 impede suíte completa confiável no sandbox)
+- Sandbox: `python3 backend/run_core_tests.py` rodou 212 verdes (via espelho /tmp por
+  causa do I010 que trunca leituras de arquivos recém-escritos no mount).
+- [USER] rodar localmente: `bash scripts/verify.sh` + `docker build .` (gate pytest HTTP).
+
+### Rodada 17 — LOTE 2 concluído (2026-06-21)
+Todas as pendências da auditoria fechadas. Verificado no sandbox (espelho /tmp por I010):
+core 213 testes verdes; front node --test 67 verdes + node --check limpo; contraste
+(0 cor fora de tokens), ≤300 LOC, innerHTML/eval zero, TODO/FIXME zero, py_compile OK.
+- B5 [CODE]: DTO `ScoreDetails` em domain/entities; `results.set_score(.., *, force,
+  set_lock, details)` (era 14 params). Callers (admin/sync) e testes atualizados. Repo estável.
+- B1 [CODE]: adapter SQL endurecido — `_to_pg_placeholders` (ignora ? e dobra % dentro de
+  strings), `_split_statements` por ';' fora de string, cursor do psycopg2 fechado. +3 testes.
+- A2 [CODE]: pool de conexões Postgres (psycopg_pool) no lifespan + get_db (checkout/return);
+  SQLite inalterado. DEPLOY: Cloud Run max-instances=1 (SSE/cache/rate-limit em memória).
+- A1 [CODE]: removidos mybets.js (delete), renderMatches, renderLive, bracket_payload,
+  minuteLabel, liveMinute, _derive_period, ScoreUpdate.period. Testes reapontados
+  (betbox→jogos.tallyBets; test_bracket_svc→matches_repo+source_label; format→liveClock).
+- M4 [CODE]: relógio ao vivo unificado em liveClock; matches.js usa-o; format.test cobre liveClock.
+- M6 [CODE]: pênaltis exibidos no bracket.js (.bracket-pens em views-extra.css, layout só).
+- C2-UI [CODE]: inputs de pênaltis (tally + pens_log) no admin.js → /api/admin/score.
+- B4 [CODE]: estado de UI (jogosTab/closedPhase/closedSort/bracketStage) no store (slice `ui`
+  + setUi); fim do `store.set({})` vazio nessas views.
+- B2 [CODE]: test_multiplier_parity — multiplicadores/pontos front (points.js) × back batem.
+- M5 [CODE]: requirements pinados exato + psycopg-pool; alvo `make lock` (pip-compile/hashes).
+- Bônus: verify.sh — grep de TODO agora usa \bTODO\b (não casava "TODOS" em português).
+- D012 status: mantido por padrão; `/api/admin/recompute` e `cli recompute` agora fazem
+  rebuild do zero (A3) — o admin tem o opt-in de um clique.
+- NEXT [USER] (local): `bash scripts/verify.sh` + `docker build .` (gate pytest HTTP);
+  rodar `make lock` 1x p/ gerar requirements.lock; setar max-instances=1 no Cloud Run.

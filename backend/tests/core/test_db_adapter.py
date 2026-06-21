@@ -85,6 +85,23 @@ class TestAdapterPostgres(unittest.TestCase):
         self.assertEqual(sql, "SELECT * FROM users WHERE email = %s AND id = %s")
         self.assertEqual(params, ("a", 1))
 
+    def test_traducao_preserva_interrogacao_em_string(self):  # B1
+        self.db.execute("SELECT * FROM t WHERE nome = 'a?b' AND id = ?", (1,))
+        sql, params = self.driver.conns[0].executed[-1]
+        self.assertEqual(sql, "SELECT * FROM t WHERE nome = 'a?b' AND id = %s")
+        self.assertEqual(params, (1,))
+
+    def test_traducao_dobra_porcento(self):  # B1 (psycopg %-format)
+        self.db.execute("SELECT * FROM t WHERE nome LIKE '%x%' AND id = ?", (1,))
+        sql, _ = self.driver.conns[0].executed[-1]
+        self.assertEqual(sql, "SELECT * FROM t WHERE nome LIKE '%%x%%' AND id = %s")
+
+    def test_split_ddl_ignora_ponto_e_virgula_em_string(self):  # B1
+        before = len(self.driver.conns[0].executed)
+        self.db.executescript("INSERT INTO t (s) VALUES ('a;b'); CREATE TABLE x (y INT)")
+        executed = self.driver.conns[0].executed[before:]
+        self.assertEqual(len(executed), 2)
+
     def test_insert_id_usa_returning(self):
         new_id = insert_id(self.db, "INSERT INTO users (email) VALUES (?)", ("a",))
         sql, _ = self.driver.conns[0].executed[-1]
@@ -184,7 +201,9 @@ class TestSettingsDatabaseUrl(unittest.TestCase):
 
     def test_database_url_normalizada(self):
         from app.config import load_settings
-        s = load_settings(self._env(DATABASE_URL="postgres://u:p@supa:5432/db"))
+        s = load_settings(self._env(
+            DATABASE_URL="postgres://u:p@supa:5432/db",
+            PUBLIC_BASE_URL="https://app.example.com", COOKIE_SECURE="true"))
         self.assertTrue(s.uses_postgres)
         self.assertEqual(s.db_target, "postgresql://u:p@supa:5432/db")
 
@@ -192,3 +211,30 @@ class TestSettingsDatabaseUrl(unittest.TestCase):
         from app.config import load_settings
         with self.assertRaises(RuntimeError):
             load_settings(self._env(DATABASE_URL="mysql://nao-suportado"))
+
+    def test_prod_exige_public_base_url(self):  # M3
+        from app.config import load_settings
+        with self.assertRaises(RuntimeError):
+            load_settings(self._env(DATABASE_URL="postgres://u:p@supa:5432/db",
+                                    COOKIE_SECURE="true"))
+
+    def test_prod_rejeita_public_base_url_localhost(self):  # M3
+        from app.config import load_settings
+        with self.assertRaises(RuntimeError):
+            load_settings(self._env(DATABASE_URL="postgres://u:p@supa:5432/db",
+                                    PUBLIC_BASE_URL="http://localhost:8000",
+                                    COOKIE_SECURE="true"))
+
+    def test_prod_exige_cookie_secure(self):  # M3
+        from app.config import load_settings
+        with self.assertRaises(RuntimeError):
+            load_settings(self._env(DATABASE_URL="postgres://u:p@supa:5432/db",
+                                    PUBLIC_BASE_URL="https://app.example.com"))
+
+    def test_prod_ok_com_envs_corretas(self):  # M3
+        from app.config import load_settings
+        s = load_settings(self._env(DATABASE_URL="postgres://u:p@supa:5432/db",
+                                    PUBLIC_BASE_URL="https://app.example.com",
+                                    COOKIE_SECURE="true"))
+        self.assertTrue(s.cookie_secure)
+        self.assertEqual(s.public_base_url, "https://app.example.com")

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { countdown, dayKey, groupByDay, minuteLabel, liveMinute, statusLabel, teamFlag, flagIsAbbr, flagSrc } from '../js/format.js';
+import { countdown, dayKey, groupByDay, liveClock, statusLabel, teamFlag, flagIsAbbr, flagSrc } from '../js/format.js';
 
 test('countdown formata dias/horas/minutos/segundos', () => {
   const base = Date.parse('2026-06-11T12:00:00Z');
@@ -34,25 +34,22 @@ test('dayKey é estável para o mesmo instante', () => {
   assert.equal(dayKey('2026-06-11T19:00:00Z'), dayKey('2026-06-11T19:00:00Z'));
 });
 
-test('minuteLabel e statusLabel', () => {
-  assert.equal(minuteLabel('live', 20), '20′');
-  assert.equal(minuteLabel('live', null), 'AO VIVO');
-  assert.equal(minuteLabel('finished', 90), '');
+test('statusLabel', () => {
   assert.equal(statusLabel('finished'), 'Encerrado');
+  assert.equal(statusLabel('live'), 'Ao vivo');
+  assert.equal(statusLabel('scheduled'), 'Agendado');
 });
 
-test('liveMinute: usa minuto do servidor; sem ele, estima pelo relógio', () => {
-  const base = Date.parse('2026-06-15T18:00:00Z');
-  const ago = (m) => new Date(base - m * 60000).toISOString();
-  assert.equal(liveMinute('2026-06-15T17:00:00Z', 37, base), "37'"); // servidor manda
-  assert.equal(liveMinute(ago(0), null, base), "1'");
-  assert.equal(liveMinute(ago(23), null, base), "23'");
-  assert.equal(liveMinute(ago(50), null, base), 'Intervalo');
-  assert.equal(liveMinute(ago(70), null, base), "55'"); // 2º tempo desconta ~15min
-  assert.equal(liveMinute(ago(108), null, base), "90+'");
-  assert.equal(liveMinute(ago(140), null, base), 'AO VIVO');
-  assert.equal(liveMinute(ago(-30), null, base), 'AO VIVO'); // antes do apito
-  assert.equal(liveMinute('lixo', null, base), 'AO VIVO');
+test('liveClock: dirigido pelo status/period do servidor (M4)', () => {
+  const lc = (m) => liveClock({ status: 'live', ...m });
+  assert.equal(liveClock({ status: 'finished', period: '2H' }), ''); // não-live
+  assert.equal(lc({ period: '1H', minute: 30 }), "30'");
+  assert.equal(lc({ period: '1H', minute: 47 }), "45+2'");      // acréscimo 1º tempo
+  assert.equal(lc({ period: '2H', minute: 93 }), "90+3'");      // acréscimo 2º tempo
+  assert.equal(lc({ period: 'HT' }), 'Intervalo');
+  assert.equal(lc({ period: 'ET_HT' }), 'Intervalo da prorrogação');
+  assert.equal(lc({ period: 'ET2', minute: 124 }), "120+4'");   // acréscimo prorrog.
+  assert.equal(lc({ period: 'PENS' }), 'Pênaltis');
 });
 
 const ENG = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';

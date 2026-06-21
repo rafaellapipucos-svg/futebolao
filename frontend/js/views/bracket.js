@@ -1,6 +1,7 @@
 // views/bracket.js — Aba 3: mata-mata, UMA fase por vez (seletor) para não
 // poluir a tela. Confrontos aparecem assim que ficam garantidos.
 import { ensureData } from '../data.js';
+import { setUi } from '../store.js';
 import { fmtTime } from '../format.js';
 import { emptyState, flagContent, h, skeletonList } from '../ui.js';
 
@@ -9,7 +10,7 @@ const PHASES = [
   ['SF', 'Semifinais'], ['THIRD', '3º lugar'], ['FINAL', 'Grande Final'],
 ];
 
-let selectedStage = 'R32';
+// Fase selecionada do mata-mata vive no store (B4): store.get().ui.bracketStage.
 
 // Pura/testável: rótulo curto "DD/MM HH:MM" para a tag do confronto. fmtTime
 // cuida do fuso/formato da hora; aqui só montamos a data.
@@ -74,19 +75,26 @@ function matchBox(m) {
       h('span', { class: 'bracket-vs', 'aria-hidden': 'true' }, '×'),
       sideRow(m.away, m.away_score, awayWin, homeWin),
     ),
+    // M6: decidido nos pênaltis — mostra o placar do shootout (placar acima é o
+    // do fim da prorrogação). O payload de /api/bracket já traz home_pens/away_pens.
+    (m.home_pens != null && m.away_pens != null)
+      ? h('div', { class: 'bracket-pens' },
+        h('span', { class: 'chip tnum', title: 'Decidido nos pênaltis' },
+          `pênaltis ${m.home_pens} × ${m.away_pens}`))
+      : null,
   );
 }
 
 function phaseBar(store, counts) {
   return h('div', { class: 'filterbar', role: 'tablist', 'aria-label': 'Fase do mata-mata' },
     PHASES.map(([stage, label]) => {
-      const active = selectedStage === stage;
+      const active = store.get().ui.bracketStage === stage;
       return h('button', {
         class: `chip ${active ? 'active' : ''}`,
         type: 'button',
         role: 'tab',
         'aria-selected': active ? 'true' : 'false',
-        onClick: () => { selectedStage = stage; store.set({}); },
+        onClick: () => setUi({ bracketStage: stage }),
       },
         label,
         counts[stage] ? h('span', { class: 'count-badge tnum' }, String(counts[stage])) : null,
@@ -112,6 +120,7 @@ export function renderBracket(store) {
     for (const [stage] of PHASES) counts[stage] = (byStage[stage] || []).length;
     bar = phaseBar(store, counts);
 
+    const selectedStage = store.get().ui.bracketStage;
     const items = (byStage[selectedStage] || []).slice().sort((a, b) => a.id - b.id);
     const phaseLabel = (PHASES.find(([s]) => s === selectedStage) || ['', ''])[1];
     content = items.length

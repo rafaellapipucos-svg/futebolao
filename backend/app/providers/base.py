@@ -19,7 +19,6 @@ class ScoreUpdate:
     away_score: Optional[int]
     minute: Optional[int] = None
     winner_code: Optional[str] = None  # mata-mata decidido em pênaltis/prorrogação
-    period: Optional[str] = None       # 1H/HT/2H/ET1/ET_HT/ET2/PENS/FT
     stoppage: Optional[int] = None
     home_pens: Optional[int] = None    # disputa de pênaltis (tally)
     away_pens: Optional[int] = None

@@ -52,6 +52,22 @@ def create_app() -> FastAPI:
         import asyncio
 
         bus.attach_loop(asyncio.get_running_loop())
+        # A2: pool de conexões em produção (Postgres). Evita abrir uma conexão
+        # nova por request/SSE/poll. SQLite (dev/testes) não usa pool (abrir
+        # arquivo é barato). DEPLOY: rode com 1 INSTÂNCIA (Cloud Run max-instances
+        # =1) — SSE/rate-limit/cache do ranking são em memória do processo.
+        if settings.uses_postgres:
+            import psycopg
+            from psycopg_pool import ConnectionPool
+
+            app.state.db_pool = ConnectionPool(
+                settings.database_url,
+                min_size=1, max_size=8, timeout=10.0,
+                kwargs={"autocommit": True, "prepare_threshold": None,
+                        "row_factory": psycopg.rows.dict_row},
+                open=True,
+            )
+            log.info("pool Postgres ativo (max=8)")
         if settings.football_data_token:
             from .db.repos import matches as matches_repo
             from .jobs.poller import Poller
@@ -72,11 +88,14 @@ def create_app() -> FastAPI:
         yield
         if "poller" in poller_holder:
             await poller_holder["poller"].stop()
+        if app.state.db_pool is not None:
+            app.state.db_pool.close()
 
     app = FastAPI(title="Bolao Copa 2026", docs_url=None, redoc_url=None,
                   openapi_url=None, lifespan=lifespan)
     app.state.settings = settings
     app.state.limiter = default_limiter()
+    app.state.db_pool = None  # preenchido no lifespan se uses_postgres (A2)
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):

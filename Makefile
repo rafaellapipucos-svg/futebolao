@@ -1,4 +1,4 @@
-.PHONY: test-core test-api test-pg verify-front verify run seed dev
+.PHONY: test-core test-api test-pg verify-front verify run seed dev lock
 
 test-core:
 	python3 backend/run_core_tests.py
@@ -23,3 +23,8 @@ dev:
 
 seed:
 	cd backend && python3 -m app.cli seed
+
+# M5: trava as dependências (inclui transitivas + hashes) p/ build reproduzível.
+# Rode 1x após mexer em requirements.txt; commite o requirements.lock gerado.
+lock:
+	cd backend && pip-compile --generate-hashes --output-file=requirements.lock requirements.txt

@@ -144,15 +144,3 @@ export function liveContent(store) {
   }
   return h('div', { class: 'live-grid' }, data.matches.map(liveMatch));
 }
-
-export function renderLive(store) {
-  return h('div', { class: 'page' },
-    h('div', { class: 'page-head' },
-      h('div', {},
-        h('h1', {}, 'Jogos ', h('span', { class: 'grad-text' }, 'ao vivo')),
-        h('p', { class: 'sub' }, 'Os palpites de todo mundo, revelados a partir do apito.'),
-      ),
-    ),
-    liveContent(store),
-  );
-}

@@ -89,7 +89,9 @@ done)
 if [ -n "$BIG" ]; then bad "arquivos acima de 300 linhas:"; echo "$BIG"; else ok "todos ≤300 linhas"; fi
 
 step "TODO/FIXME pendentes"
-if grep -rn --include='*.py' --include='*.js' -e 'TODO' -e 'FIXME' backend/app frontend/js; then
+# \bTODO\b / \bFIXME\b: casa o MARCADOR, não a palavra portuguesa "TODOS"
+# (que contém "TODO" como substring e dava falso positivo).
+if grep -rnE --include='*.py' --include='*.js' -e '\bTODO\b' -e '\bFIXME\b' backend/app frontend/js; then
   bad "pendências encontradas"
 else
   ok "sem TODO/FIXME"

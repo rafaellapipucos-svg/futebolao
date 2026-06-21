@@ -1,25 +1,10 @@
-// views/matches.js — Aba 2: jogos por fase/dia/horário com apostas inline.
+// views/matches.js — cartão de jogo (matchCard), reutilizado pela aba Jogos.
+// O renderMatches antigo (página própria) saiu na Rodada 16 (fundido em Jogos);
+// só o cartão permanece. Relógio ao vivo unificado em liveClock (M4).
 import { renderBetBox } from '../betbox.js';
-import { ensureData } from '../data.js';
-import { fmtTime, groupByDay, liveMinute } from '../format.js';
-import { emptyState, flagContent, h, icon, skeletonList } from '../ui.js';
+import { fmtTime, liveClock } from '../format.js';
+import { flagContent, h, icon } from '../ui.js';
 
-const STAGE_FILTERS = [
-  ['ALL', 'Todos'], ['GROUP', 'Grupos'], ['R32', '16 avos'], ['R16', 'Oitavas'],
-  ['QF', 'Quartas'], ['SF', 'Semis'], ['THIRD', '3º lugar'], ['FINAL', 'Grande Final'],
-];
-
-let activeFilter = 'ALL';
-let searchQuery = '';
-
-// Busca acento-insensível ("Japao" encontra "Japão"): remove marcas diacríticas.
-const norm = (s) => String(s).normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
-
-function matchesQuery(match, q) {
-  if (!q) return true;
-  return [match.home, match.away].some(
-    (side) => side.team && norm(side.team.name).includes(q));
-}
 
 function teamSide(side, right = false) {
   if (side.team) {
@@ -48,7 +33,7 @@ function scoreBox(match) {
     ),
     match.status === 'live'
       ? h('span', { class: 'chip chip-live' }, h('span', { class: 'dot' }),
-        liveMinute(match.kickoff_utc, match.minute))
+        liveClock(match))
       : h('span', { class: 'chip' }, 'Encerrado'),
   );
 }
@@ -72,74 +57,5 @@ export function matchCard(store, match) {
       teamSide(match.away, true),
     ),
     renderBetBox(store, match),
-  );
-}
-
-function filterBar(store) {
-  return h('div', { class: 'filterbar' },
-    STAGE_FILTERS.map(([value, label]) => h('button', {
-      class: `chip ${activeFilter === value ? 'active' : ''}`,
-      type: 'button',
-      onClick: () => { activeFilter = value; store.set({}); },
-    }, label)),
-  );
-}
-
-function searchBox(store) {
-  const input = h('input', {
-    id: 'match-search', class: 'input', type: 'search', autocomplete: 'off',
-    placeholder: 'Buscar time…', value: searchQuery,
-    'aria-label': 'Buscar jogos por nome de time',
-  });
-  input.addEventListener('input', () => {
-    const pos = input.selectionStart;
-    searchQuery = input.value;
-    store.set({}); // re-render troca o input: restaura foco e cursor
-    const el = document.getElementById('match-search');
-    if (el) {
-      el.focus();
-      try { el.setSelectionRange(pos, pos); } catch { /* navegador sem suporte */ }
-    }
-  });
-  return h('div', { class: 'match-search' }, icon('search', 16), input);
-}
-
-export function renderMatches(store) {
-  const data = ensureData(store, 'matches');
-  const q = norm(searchQuery.trim());
-  let content;
-  if (data === null) {
-    content = skeletonList(5, 170);
-  } else if (data.error) {
-    content = emptyState('bolt', 'Não consegui carregar os jogos.', data.error);
-  } else {
-    const filtered = data.matches.filter(
-      (m) => (activeFilter === 'ALL' || m.stage === activeFilter) && matchesQuery(m, q),
-    );
-    if (filtered.length === 0) {
-      content = q
-        ? emptyState('search', `Nenhum jogo encontrado para “${searchQuery.trim()}”.`,
-          'Tente outro nome de time ou limpe a busca.')
-        : emptyState('ball', 'Nenhum jogo nesta fase ainda.',
-          'Os confrontos aparecem assim que ficarem definidos.');
-    } else {
-      content = groupByDay(filtered).map((day) => [
-        h('div', { class: 'day-sep' }, day.label),
-        h('div', { style: 'display:grid;gap:14px' },
-          day.items.map((m) => matchCard(store, m))),
-      ]);
-    }
-  }
-  return h('div', { class: 'page' },
-    h('div', { class: 'page-head' },
-      h('div', {},
-        h('h1', { class: 'h1-ico' }, icon('ball', 26),
-          h('span', {}, 'Jogos & ', h('span', { class: 'grad-text' }, 'Apostas'))),
-        h('p', { class: 'sub' }, 'Aposte no placar exato até o apito inicial de cada partida.'),
-      ),
-      searchBox(store),
-    ),
-    filterBar(store),
-    content,
   );
 }

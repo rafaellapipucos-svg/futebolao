@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-// DOM stub mínimo: betbox.js e mybets.js importam ui.js (usa document em h()).
+// DOM stub mínimo: betbox.js e jogos.js importam ui.js (usa document em h()).
 // As funções puras testadas aqui (clampScore/kickoffProgress/tallyBets) não
 // tocam no DOM — o stub só permite o import dos módulos.
 class Node {}
@@ -20,7 +20,8 @@ globalThis.document = {
 };
 
 const { clampScore, kickoffProgress } = await import('../js/betbox.js');
-const { tallyBets } = await import('../js/views/mybets.js');
+// tallyBets agora vive em jogos.js (mybets.js foi removido na limpeza A1).
+const { tallyBets } = await import('../js/views/jogos.js');
 
 test('clampScore: inteiro 0–20, entrada inválida/vazia vira 0', () => {
   assert.equal(clampScore('3'), 3);

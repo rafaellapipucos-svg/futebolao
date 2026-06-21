@@ -74,12 +74,12 @@ def cmd_sync(settings, _args) -> int:
 
 
 def cmd_recompute(settings, _args) -> int:
-    from .services.bracket_svc import persist_resolutions
+    from .services.bracket_svc import rebuild_bracket
 
     conn = _conn(settings)
-    changed = persist_resolutions(conn)
+    changed = rebuild_bracket(conn)  # recálculo completo (limpa não-disputados)
     bump_data_version(conn)
-    print(f"recompute ok: {changed} confrontos resolvidos")
+    print(f"recompute ok: {changed} confrontos recalculados")
     return 0
 
 

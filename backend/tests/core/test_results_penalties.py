@@ -2,7 +2,7 @@
 import unittest
 
 from app.db.repos import matches as matches_repo
-from app.domain.entities import MatchStatus
+from app.domain.entities import MatchStatus, ScoreDetails
 from app.services.results import ResultError, set_score
 
 from .db_helper import seeded_db, team_id_by_code
@@ -19,16 +19,17 @@ class TestResultsPenalties(unittest.TestCase):
         self.conn.close()
 
     def test_persiste_periodo_e_acrescimo_ao_vivo(self):
-        set_score(self.conn, 73, 1, 0, MatchStatus.LIVE, minute=47,
-                  period="1H", stoppage=2)
+        set_score(self.conn, 73, 1, 0, MatchStatus.LIVE,
+                  details=ScoreDetails(minute=47, period="1H", stoppage=2))
         m = matches_repo.by_id(self.conn, 73)
         self.assertEqual(m.period, "1H")
         self.assertEqual(m.stoppage, 2)
 
     def test_persiste_penaltis_no_mata_mata(self):
-        set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED, period="FT",
-                  home_pens=4, away_pens=2, winner_team_id=self.mex,
-                  pens_log='[["home",true],["away",false]]')
+        set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
+                  details=ScoreDetails(period="FT", home_pens=4, away_pens=2,
+                                       winner_team_id=self.mex,
+                                       pens_log='[["home",true],["away",false]]'))
         m = matches_repo.by_id(self.conn, 73)
         self.assertEqual((m.home_pens, m.away_pens), (4, 2))
         self.assertTrue(m.went_to_penalties)
@@ -37,11 +38,28 @@ class TestResultsPenalties(unittest.TestCase):
 
     def test_periodo_invalido_rejeitado(self):
         with self.assertRaises(ResultError):
-            set_score(self.conn, 73, 0, 0, MatchStatus.LIVE, period="ZZZ")
+            set_score(self.conn, 73, 0, 0, MatchStatus.LIVE,
+                      details=ScoreDetails(period="ZZZ"))
 
     def test_empate_pos_prorrogacao_sem_winner_rejeitado(self):
         with self.assertRaises(ResultError):
-            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED, period="FT")
+            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
+                      details=ScoreDetails(period="FT"))
+
+    def test_pens_log_json_malformado_rejeitado(self):
+        with self.assertRaises(ResultError):
+            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
+                      details=ScoreDetails(period="FT", winner_team_id=self.mex,
+                                           home_pens=4, away_pens=2,
+                                           pens_log="{nao eh json}"))
+
+    def test_pens_log_formato_errado_rejeitado(self):
+        # elemento não é ["home"|"away", bool]
+        with self.assertRaises(ResultError):
+            set_score(self.conn, 73, 1, 1, MatchStatus.FINISHED,
+                      details=ScoreDetails(period="FT", winner_team_id=self.mex,
+                                           home_pens=4, away_pens=2,
+                                           pens_log='[["meio", 1]]'))
 
 
 if __name__ == "__main__":

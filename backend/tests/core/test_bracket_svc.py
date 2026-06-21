@@ -5,7 +5,7 @@ import unittest
 from app.db.repos import matches as matches_repo
 from app.db.repos import teams as teams_repo
 from app.domain.entities import GROUPS, MatchStatus, Stage
-from app.services.bracket_svc import bracket_payload, source_label
+from app.services.bracket_svc import source_label
 from app.services.results import set_score
 from app.services.standings_svc import standings
 
@@ -27,21 +27,20 @@ class TestBracketIntegrado(unittest.TestCase):
                 set_score(self.conn, m.id, 2, 0, MatchStatus.FINISHED)
 
     def test_r32_resolve_apos_grupos(self):
-        payload0 = bracket_payload(self.conn)
-        m73 = next(p for p in payload0 if p["id"] == 73)
-        self.assertIsNone(m73["home"]["team"])
-        self.assertEqual(m73["home"]["label"], "2º do Grupo A")
+        # Antes dos grupos: R32 sem times; o slot mostra o rótulo da fonte.
+        m73 = matches_repo.by_id(self.conn, 73)
+        self.assertIsNone(m73.home_team_id)
+        self.assertEqual(source_label(m73.home_source), "2º do Grupo A")
 
         self._play_groups()
-        payload = bracket_payload(self.conn)
-        for p in payload:
-            if p["stage"] == "R32":
-                self.assertIsNotNone(p["home"]["team"], p["id"])
-                self.assertIsNotNone(p["away"]["team"], p["id"])
-        # R16 ainda com labels
-        m89 = next(p for p in payload if p["id"] == 89)
-        self.assertIsNone(m89["home"]["team"])
-        self.assertEqual(m89["home"]["label"], "Vencedor J74")
+        for m in matches_repo.all_matches(self.conn):
+            if m.stage == Stage.R32:
+                self.assertIsNotNone(m.home_team_id, m.id)
+                self.assertIsNotNone(m.away_team_id, m.id)
+        # R16 ainda indefinido (depende de jogos do R32): fonte = vencedor de J74.
+        m89 = matches_repo.by_id(self.conn, 89)
+        self.assertIsNone(m89.home_team_id)
+        self.assertEqual(source_label(m89.home_source), "Vencedor J74")
 
     def test_cascata_ate_final_e_terceiro(self):
         self._play_groups()

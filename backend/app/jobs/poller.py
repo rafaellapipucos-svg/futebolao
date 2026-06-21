@@ -1,9 +1,9 @@
 """Poller assíncrono: consulta o provider quando há jogo na janela ativa.
 
-Janela ativa: existe partida live, ou scheduled com kickoff entre now-10min e
-now+10min (pré-jogo), ou live esperada (kickoff < now < kickoff+3h30).
-Cadência: 60s na janela (free tier: 10 req/min — ok), 15min fora dela
-(captura mudanças de horário/fixtures).
+Janela ativa: existe partida live, ou scheduled com kickoff em [-30min, +3h30]
+(PRE_WINDOW/POST_WINDOW). Cadência: 60s na janela (free tier: 10 req/min — ok),
+5min fora dela (IDLE_INTERVAL — curto p/ capturar mudança de horário/fixture sem
+admin). Mantenha estes números em sincronia com as constantes abaixo.
 """
 from __future__ import annotations
 

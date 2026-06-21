@@ -35,6 +35,16 @@ function scoreControls(store, m) {
     m.home.team ? h('option', { value: String(m.home.team.id) }, m.home.team.code) : null,
     m.away.team ? h('option', { value: String(m.away.team.id) }, m.away.team.code) : null,
   );
+  // C2: placar da disputa de pênaltis (mata-mata, modo manual) + sequência opcional.
+  const hPens = h('input', { class: 'input', type: 'number', min: '0', max: '99',
+    value: m.home_pens != null ? String(m.home_pens) : '', placeholder: 'pên M',
+    'aria-label': 'pênaltis mandante' });
+  const aPens = h('input', { class: 'input', type: 'number', min: '0', max: '99',
+    value: m.away_pens != null ? String(m.away_pens) : '', placeholder: 'pên V',
+    'aria-label': 'pênaltis visitante' });
+  const pensLog = h('input', { class: 'input', type: 'text', value: m.pens_log || '',
+    placeholder: 'sequência (opcional): [["home",true],["away",false]]',
+    'aria-label': 'sequência de pênaltis (JSON, opcional)' });
   const payload = (status) => {
     const body = {
       home_score: parseInt(home.value, 10) || 0,
@@ -44,6 +54,13 @@ function scoreControls(store, m) {
     const min = parseInt(minute.value, 10);
     if (Number.isInteger(min)) body.minute = min;
     if (winner.value) body.winner_team_id = parseInt(winner.value, 10);
+    const hp = parseInt(hPens.value, 10);
+    const ap = parseInt(aPens.value, 10);
+    if (Number.isInteger(hp) && Number.isInteger(ap)) {
+      body.home_pens = hp;
+      body.away_pens = ap;
+    }
+    if (pensLog.value.trim()) body.pens_log = pensLog.value.trim();
     if (m.status === 'finished') body.force = true;
     return body;
   };
@@ -57,6 +74,9 @@ function scoreControls(store, m) {
   return h('div', { class: 'admin-controls' },
     home, h('span', { class: 'score-x' }, 'x'), away, minute,
     showWinner ? winner : null,
+    showWinner ? hPens : null,
+    showWinner ? aPens : null,
+    showWinner ? pensLog : null,
     btn('Ao vivo', 'live'),
     btn('Encerrar', 'finished', 'btn btn-sm btn-primary'),
     h('button', {

@@ -3,6 +3,7 @@
 // palpites de todos + relógio) e Encerrados (filtro de fase + ordenação + fundo
 // por acerto). Rodada 16 (feature I).
 import { ensureData } from '../data.js';
+import { setUi } from '../store.js';
 import { emptyState, h, icon, skeletonList } from '../ui.js';
 import { matchCard } from './matches.js';
 import { liveContent } from './live.js';
@@ -15,9 +16,8 @@ const PHASES = [
   ['THIRD', '3º lugar'], ['FINAL', 'Grande Final'],
 ];
 
-let activeTab = 'future';   // 'future' | 'live' | 'closed'
-let closedPhase = 'ALL';    // filtro de fase — só na subdivisão Encerrados
-let closedSort = 'desc';    // 'desc' = mais recentes primeiro | 'asc' = mais antigos
+// Estado de UI (aba ativa, filtro/ordem dos encerrados) vive no store (B4):
+// store.get().ui.{jogosTab, closedPhase, closedSort}.
 
 // Pontos agregados das apostas pontuadas (puro/testável).
 export function tallyBets(withBets) {
@@ -73,22 +73,22 @@ function futureView(store, matches) {
 function phaseSelect(store) {
   const sel = h('select', {
     class: 'fase-select', 'aria-label': 'Filtrar por fase',
-    onChange: () => { closedPhase = sel.value; store.set({}); },
+    onChange: () => setUi({ closedPhase: sel.value }),
   }, PHASES.map(([value, label]) => h('option', { value }, label)));
-  sel.value = closedPhase;
+  sel.value = store.get().ui.closedPhase;
   return h('label', { class: 'fase-field' },
     h('span', { class: 'fase-lbl' }, 'Fase'), sel);
 }
 
 // Botão ↕ (à direita) que inverte a ordem — padrão de sites, no lugar de 2 botões.
 function sortButton(store) {
-  const desc = closedSort === 'desc';
+  const desc = store.get().ui.closedSort === 'desc';
   return h('button', {
     class: 'sortbtn', type: 'button',
     title: desc ? 'Mais recentes primeiro (tocar para inverter)'
       : 'Mais antigos primeiro (tocar para inverter)',
     'aria-label': 'Inverter a ordem dos jogos encerrados',
-    onClick: () => { closedSort = desc ? 'asc' : 'desc'; store.set({}); },
+    onClick: () => setUi({ closedSort: desc ? 'asc' : 'desc' }),
   }, icon('sort', 18),
     h('span', { class: 'sortbtn-lbl' }, desc ? 'Mais recentes' : 'Mais antigos'));
 }
@@ -111,6 +111,7 @@ function closedCard(store, m) {
 }
 
 function closedView(store, matches) {
+  const { closedPhase, closedSort } = store.get().ui;
   const list = byPhase(matches.filter((m) => m.status === 'finished'), closedPhase)
     .slice()
     .sort((a, b) => (closedSort === 'desc'
@@ -130,6 +131,7 @@ export function renderJogos(store) {
   let summaryEl = null;
   let content;
   const counts = { future: 0, live: 0, closed: 0 };
+  const activeTab = store.get().ui.jogosTab;
   if (data === null) {
     content = skeletonList(4, 150);
   } else if (data.error) {
@@ -151,7 +153,7 @@ export function renderJogos(store) {
       class: `chip ${active ? 'active' : ''}`,
       type: 'button',
       'aria-pressed': active ? 'true' : 'false',
-      onClick: () => { activeTab = key; store.set({}); },
+      onClick: () => setUi({ jogosTab: key }),
     },
       opts.live ? h('span', { class: 'dot', 'aria-hidden': 'true' }) : null,
       label,

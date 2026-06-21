@@ -138,8 +138,9 @@ futebolão/
     │   ├── points.js          # espelho do scoring p/ exibição otimista
     │   ├── ui.js              # h(), modal, toast, skeleton, ícones SVG
     │   ├── layout.js          # header + tab bar (bottom no mobile) + live dot
-    │   └── views/{login,dashboard,matches,bracket,leaderboard,mybets,profile,admin}.js
-    └── tests/  (node:test: points, format, router, store)
+    │   └── views/{login,dashboard,jogos,bracket,leaderboard,profile,admin}.js
+    │       # + matches/live/howtoplay/*_modal reutilizados pela aba Jogos (Rodada 16)
+    └── tests/  (node:test: points, format, router, store, jogos, bracket, live, leaderboard…)
 ```
 
 ## 5. Modelo de dados (SQLite)

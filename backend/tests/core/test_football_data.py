@@ -50,11 +50,12 @@ class TestFootballData(unittest.TestCase):
         self.assertIsNone(team_code({}))
 
     def test_mata_mata_penaltis_extrai_tally_e_winner(self):
+        # API real: fullTime soma os pênaltis. ET 1x1 + pênaltis 3x4 ⇒ fullTime 4x5.
         upd = parse_match(raw_match(
             status="FINISHED",
             score={
                 "winner": "AWAY_TEAM", "duration": "PENALTY_SHOOTOUT",
-                "fullTime": {"home": 1, "away": 1},
+                "fullTime": {"home": 4, "away": 5},
                 "regularTime": {"home": 1, "away": 1},
                 "penalties": {"home": 3, "away": 4},
             },

@@ -51,6 +51,11 @@ class AdminScoreIn(BaseModel):
     winner_team_id: Optional[int] = None
     force: bool = False
     lock: Optional[bool] = None
+    # Mata-mata no modo manual: placar da disputa de pênaltis (tally) + sequência
+    # chute-a-chute opcional. set_score valida o conteúdo do pens_log.
+    home_pens: Optional[int] = Field(default=None, ge=0, le=99)
+    away_pens: Optional[int] = Field(default=None, ge=0, le=99)
+    pens_log: Optional[str] = Field(default=None, max_length=2000)
 
 
 class AdminResetPasswordIn(BaseModel):

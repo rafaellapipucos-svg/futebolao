@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 from ..db.repos import matches as matches_repo
 from ..db.repos import teams as teams_repo
 from ..db.schema import bump_data_version
-from ..domain.entities import Match, MatchStatus
+from ..domain.entities import Match, MatchStatus, ScoreDetails
 from ..services.live_bus import bus
 from ..services.results import ResultError, set_score
 from .base import ScoreUpdate
@@ -62,21 +62,21 @@ def _find_local(
     matches: List[Match],
     code_of: Dict[int, str],
 ) -> Optional[Match]:
+    """Casamento FORTE apenas (M2): por external_id já conhecido OU por janela de
+    horário + os DOIS códigos de time. NUNCA adivinha pelo 'único candidato' na
+    janela — no mata-mata vários jogos do mesmo dia caem na janela e os slots
+    podem estar indefinidos (TBD). Sem match forte, devolve None (o chamador pula
+    e loga), coerente com 'se falhar, falhe' em vez de atribuir ao jogo errado."""
     m = by_external.get(update.external_id)
     if m is not None:
         return m
-    candidates = [
-        m for m in matches
-        if abs(m.kickoff_utc - update.kickoff_utc) <= MATCH_WINDOW
-    ]
     if update.home_code and update.away_code:
-        for m in candidates:
-            home = code_of.get(m.home_team_id)
-            away = code_of.get(m.away_team_id)
-            if home == update.home_code and away == update.away_code:
+        for m in matches:
+            if abs(m.kickoff_utc - update.kickoff_utc) > MATCH_WINDOW:
+                continue
+            if (code_of.get(m.home_team_id) == update.home_code
+                    and code_of.get(m.away_team_id) == update.away_code):
                 return m
-    if len(candidates) == 1:
-        return candidates[0]
     return None
 
 
@@ -92,6 +92,10 @@ def apply_updates(conn: Db, updates: List[ScoreUpdate]) -> int:
     for upd in updates:
         local = _find_local(upd, by_external, matches, code_of)
         if local is None:
+            # Sem match forte: pula (não adivinha). Normal p/ jogos do provider
+            # fora do nosso fixture ou confrontos de KO ainda TBD.
+            log.debug("sync sem match local p/ ext=%s (%s x %s)",
+                      upd.external_id, upd.home_code, upd.away_code)
             continue
         if local.external_id != upd.external_id:
             matches_repo.set_external_id(conn, local.id, upd.external_id)
@@ -136,10 +140,13 @@ def apply_updates(conn: Db, updates: List[ScoreUpdate]) -> int:
         try:
             set_score(
                 conn, local.id, upd.home_score, upd.away_score, upd.status,
-                minute=upd.minute, winner_team_id=winner_team_id, force=True,
-                period=new_period, stoppage=upd.stoppage,
-                home_pens=upd.home_pens, away_pens=upd.away_pens,
-                period_started_at=period_started_at,
+                force=True,
+                details=ScoreDetails(
+                    minute=upd.minute, winner_team_id=winner_team_id,
+                    period=new_period, stoppage=upd.stoppage,
+                    home_pens=upd.home_pens, away_pens=upd.away_pens,
+                    period_started_at=period_started_at,
+                ),
             )
             changed += 1
         except ResultError as exc:

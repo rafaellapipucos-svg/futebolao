@@ -10,8 +10,8 @@ from ..db.repos import matches as matches_repo
 from ..db.repos import tokens as tokens_repo
 from ..db.repos import users as users_repo
 from ..db.schema import bump_data_version
-from ..domain.entities import MatchStatus
-from ..services.bracket_svc import persist_resolutions
+from ..domain.entities import MatchStatus, ScoreDetails
+from ..services.bracket_svc import rebuild_bracket
 from ..services.live_bus import bus
 from ..services.results import ResultError, reset_match, set_score, update_kickoff
 from ..services.betting import BetValidationError, admin_set_bet
@@ -34,9 +34,12 @@ def admin_set_score(
     try:
         set_score(
             conn, match_id, body.home_score, body.away_score,
-            MatchStatus(body.status), minute=body.minute,
-            winner_team_id=body.winner_team_id, force=body.force,
-            set_lock=body.lock,
+            MatchStatus(body.status), force=body.force, set_lock=body.lock,
+            details=ScoreDetails(
+                minute=body.minute, winner_team_id=body.winner_team_id,
+                home_pens=body.home_pens, away_pens=body.away_pens,
+                pens_log=body.pens_log,
+            ),
         )
     except ResultError as exc:
         raise HTTPException(422, str(exc))
@@ -79,7 +82,9 @@ async def admin_sync(
 
 @router.post("/recompute", dependencies=[Depends(require_csrf)])
 def admin_recompute(conn: Db = Depends(get_db)):
-    changed = persist_resolutions(conn)
+    # Recálculo COMPLETO (A3): limpa os confrontos ainda não disputados e
+    # re-propaga do zero — desfaz contaminação de um KO corrigido.
+    changed = rebuild_bracket(conn)
     version = bump_data_version(conn)
     bus.publish(version)
     return {"ok": True, "resolved": changed}

@@ -29,4 +29,12 @@ export const store = createStore({
   leaderboard: null,
   bracket: null,
   live: null,
+  // estado de UI das views (B4): antes eram variáveis de módulo soltas. No store,
+  // a troca de aba/filtro vira um delta real (sem a gambiarra store.set({})).
+  ui: { jogosTab: 'future', closedPhase: 'ALL', closedSort: 'desc', bracketStage: 'R32' },
 });
+
+// Atualiza só o slice de UI e notifica (re-render). Centraliza o merge do `ui`.
+export function setUi(partial) {
+  store.set({ ui: { ...store.get().ui, ...partial } });
+}
