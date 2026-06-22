@@ -1,0 +1,252 @@
+/* ============ VIEWS: login, dashboard, bracket, ranking, perfil, admin ============ */
+
+/* ---- Login ---- */
+.auth-wrap { min-height: 86dvh; display: grid; place-items: center; padding: var(--sp-4); }
+.auth-card { width: min(94vw, 420px); padding: var(--sp-6); display: grid; gap: var(--sp-4); }
+.auth-logo { display: grid; justify-items: center; gap: 6px; margin-bottom: var(--sp-2); }
+.auth-logo svg { width: 54px; height: 54px; }
+.auth-logo h1 { font-size: var(--fs-xl); font-weight: 800; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  background: var(--surface-2); padding: 5px; border-radius: var(--r-md); }
+.auth-tabs button { padding: 9px; border: none; border-radius: var(--r-sm);
+  background: transparent; color: var(--text-2); font-weight: 700; cursor: pointer; }
+.auth-tabs button.active { background: var(--surface-2); color: var(--text-0); }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--text-2);
+  font-size: var(--fs-xs); }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px;
+  background: var(--border); }
+.auth-error { background: var(--red-soft); color: var(--red);
+  border: 1px solid var(--red-border); border-radius: var(--r-md);
+  padding: 10px 14px; font-size: var(--fs-sm); font-weight: 600; }
+
+/* ---- Dashboard (tabela ao vivo) — Agente 2 / refeita Rodada 15 ---- */
+.groups-grid { display: grid; gap: var(--sp-4);
+  /* min(100%, …): nunca força o card além da viewport (sem rolagem da página). */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+/* container-type: permite a "container query" abaixo decidir nome completo × sigla
+   pela LARGURA DO CARD (não da tela), então funciona em qualquer nº de colunas. */
+.group-card { padding: var(--sp-3); container-type: inline-size; }
+.group-card h3 { font-size: var(--fs-lg); font-weight: 800; color: var(--text-0);
+  margin-bottom: var(--sp-3);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.group-letter { color: var(--accent); font-weight: 800; }
+
+/* table-layout fixed + width:100%: a tabela NUNCA estoura — colunas numéricas
+   com largura fixa e o nome trunca. Zero rolagem horizontal em qualquer tela. */
+.standings-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* Cabeçalho: divisória mais FORTE que as linhas (separa título de dado). */
+.standings-table th { color: var(--text-2); font-size: var(--fs-xs); font-weight: 700;
+  text-align: center; padding: 2px 1px 7px; font-variant-numeric: tabular-nums;
+  border-bottom: 2px solid var(--border-strong); }
+.standings-table th.tname { text-align: left; padding-left: 12px; }
+/* Dados numéricos: peso MÉDIO e cor suave — não competem com nome/Pts. */
+.standings-table td { padding: 8px 1px; text-align: center;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs); font-weight: 500; color: var(--text-1);
+  border-bottom: 1px solid var(--border); }
+.standings-table tr:last-child td { border-bottom: none; }
+/* Colunas numéricas estreitas e iguais (8 colunas + nome cabem sem rolar). */
+.standings-table th:not(.tname), .standings-table td:not(.tname) { width: 26px; }
+/* Nome: pega o resto, fonte normal, NEGRITO, trunca. Borda esquerda = zona. */
+.standings-table td.tname { font-family: var(--font); text-align: left; width: auto;
+  font-size: var(--fs-sm); font-weight: 700; color: var(--text-0);
+  border-left: 3px solid transparent; padding-left: 9px; }
+.tname-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tname-wrap .pos { flex: none; min-width: 14px; text-align: center;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-weight: 700; color: var(--text-1); }
+.tname-wrap .team-flag { flex: none; }
+.tname-wrap .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; }
+/* Sigla PT (Rodada 16): escondida quando o card é largo (mostra o nome completo);
+   aparece só quando o card fica estreito — nome nunca corta e zero rolagem. */
+.tname-wrap .sigla { display: none; flex: none; font-weight: 700; }
+@container (max-width: 400px) {
+  .tname-wrap .nm { display: none; }
+  .tname-wrap .sigla { display: inline; }
+}
+.tname-wrap .clinch { flex: none; color: var(--success); font-weight: 800;
+  font-size: var(--fs-xs); }
+/* Pts: âncora à direita — negrito e cor cheia. */
+.standings-table .pts { color: var(--text-0); font-weight: 800; font-size: var(--fs-sm); }
+
+/* Zona de classificação SÓ pela borda esquerda (sem fundo de linha nem pílula:
+   remove a redundância e o problema de contraste do "3" dourado). */
+tr.row-q td.tname { border-left-color: var(--success); }     /* 1º–2º: vaga direta */
+tr.row-t td.tname { border-left-color: var(--gold); }        /* 3º que se classifica */
+tr.row-out td.tname { border-left-color: var(--red); }       /* não se classificaria */
+/* Ao vivo: só o Pts pulsa (sinal sutil, sem pintar a linha inteira). */
+tr.row-live .pts { color: var(--live); animation: pulse 1.6s ease-in-out infinite; }
+
+.legend { display: flex; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap;
+  align-items: center; margin-top: var(--sp-4);
+  color: var(--text-2); font-size: var(--fs-xs); }
+.legend .bar { width: 14px; height: 3px; border-radius: 2px; display: inline-block;
+  margin-right: 6px; vertical-align: middle; }
+.legend .bar.q { background: var(--success); }
+.legend .bar.t { background: var(--gold); }
+.legend .bar.out { background: var(--red); }
+@media (min-width: 880px) { .group-card { padding: var(--sp-4) var(--sp-5); } }
+
+/* ---- Bracket: estilos canônicos na seção "Mata-mata (Agente 5)" no fim ---- */
+
+/* ---- Ranking (Agente 6): seção consolidada em css/views-extra.css ---- */
+
+/* ---- Minhas apostas: seção do Agente 7 em css/views-extra.css ---- */
+
+/* ---- Perfil ---- */
+.profile-grid { display: grid; gap: var(--sp-4); max-width: 560px; }
+.profile-card { padding: var(--sp-5); display: grid; gap: var(--sp-4); }
+.avatar-edit { position: relative; width: 96px; height: 96px; cursor: pointer;
+  justify-self: center; }
+.avatar-edit .avatar { width: 96px; height: 96px; font-size: 2rem; }
+.avatar-edit .cam { position: absolute; bottom: 0; right: 0;
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--grad-brand); color: var(--text-on-accent);
+  border: 2px solid var(--bg-1); }
+.avatar-edit .cam svg { width: 15px; height: 15px; }
+
+/* ---- Admin ---- */
+.admin-match { padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-3); }
+.admin-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.admin-controls .input { width: 64px; text-align: center; font-family: var(--mono); }
+.admin-controls select.input { width: auto; }
+
+/* ---- Desktop ---- */
+@media (min-width: 880px) {
+  .topnav { display: flex; }
+  .tabbar { display: none; }
+  .shell { padding-bottom: var(--sp-6); }
+  #toasts { bottom: 24px; }
+  .auth-card { padding: var(--sp-7); }
+}
+@media (max-width: 879px) {
+  .page-head h1 { font-size: var(--fs-xl); }
+}
+
+/* ---- Perfil: histórico de palpites ---- */
+.profile-history { margin-top: var(--sp-4); }
+.hist-list { display: grid; gap: 8px; margin-top: var(--sp-3); }
+.hist-item { display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 12px; border-radius: var(--r-md);
+  border: 1px solid var(--border); border-left: 4px solid var(--border);
+  background: var(--surface); }
+.hist-item.hist-green { border-left-color: var(--green); }
+.hist-item.hist-red { border-left-color: var(--red); }
+.hist-item.hist-gold { border-left-color: var(--gold); }
+.hist-pts { font-family: var(--mono); font-weight: 800; flex: none; }
+.hist-green .hist-pts { color: var(--green); }
+.hist-red .hist-pts { color: var(--red); }
+.hist-gold .hist-pts { color: var(--gold); }
+.dot-gold, .dot-green, .dot-red { display: inline-block; width: 9px; height: 9px;
+  border-radius: 3px; vertical-align: middle; }
+.dot-gold { background: var(--gold); }
+.dot-green { background: var(--green); }
+.dot-red { background: var(--red); }
+
+/* === Ao Vivo (Agente 4) === */
+.live-grid { display: grid; gap: var(--sp-4); }
+.live-card { padding: var(--sp-4); display: grid; gap: var(--sp-4); }
+
+/* Bloco de placar coeso: nomes+bandeiras encostam no placar central.
+   Colunas laterais limitadas (minmax 0..max-content) para o "0 × 0" ficar
+   centrado e os times próximos dele, em vez de soltos nas pontas. */
+.live-head { display: grid; align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--sp-3); }
+.live-team { display: flex; align-items: center; gap: var(--sp-2); min-width: 0;
+  justify-content: flex-end; }              /* casa: encosta no placar (à direita) */
+.live-team.right { justify-content: flex-start; } /* visitante: encosta à esquerda */
+.live-team-name { font-weight: 700; font-size: var(--fs-md); color: var(--text-0);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-team .team-flag { display: inline-flex; flex: none; }
+.live-team .flag-placeholder { width: var(--flag-md); height: var(--flag-md);
+  flex: none; border-radius: 50%; background: var(--surface-2);
+  border: 1px solid var(--border); }
+.live-score { display: grid; justify-items: center; gap: var(--sp-2); flex: none; }
+.live-score b { font-size: var(--fs-xl); font-family: var(--mono); font-weight: 800;
+  color: var(--text-0); line-height: 1; }
+
+/* Grid de palpites (4 colunas em telas largas) */
+.live-bettors { display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.live-empty-bettors { grid-column: 1 / -1; padding: var(--sp-2) 0; }
+
+/* Card de bettor: branco sólido (--card-bg) destacando-se do card-pai cinza.
+   Sombra leve só no hover (token, theme-safe); em repouso a borda já separa. */
+.live-bettor { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md); border: 1px solid var(--border);
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-0) 7%, transparent);
+  cursor: pointer; text-align: left; color: inherit; width: 100%;
+  transition: transform .15s var(--ease), border-color .15s, box-shadow .15s; }
+.live-bettor:hover { transform: translateY(-1px);
+  border-color: var(--border-strong); box-shadow: var(--shadow-card); }
+
+/* Identidade (avatar + nome) — nome centrado no eixo do avatar */
+.live-bettor-id { display: flex; align-items: center; gap: var(--sp-2);
+  min-width: 0; flex: 1; }
+.live-bettor-id .avatar { flex: none; }
+.live-bettor-name { font-weight: 600; font-size: var(--fs-sm); color: var(--text-0);
+  line-height: 1.2; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Palpite (NEUTRO) separado da pontuação */
+.live-bettor-meta { display: flex; align-items: center; gap: var(--sp-2);
+  flex: none; }
+.live-guess { font-size: var(--fs-xs); font-weight: 700; color: var(--text-1);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-full); padding: 2px 9px; white-space: nowrap; }
+
+/* Pontuação: discreta para quem zerou, destacada (verde, negrito) p/ quem pontua */
+.live-bettor-pts { font-family: var(--mono); font-weight: 700; font-size: var(--fs-sm);
+  color: var(--text-2); flex: none; min-width: 38px; text-align: right; }
+.live-bettor-pts.scoring { color: var(--success); font-weight: 800; }
+
+/* Estado de sucesso: quem está pontuando ganha borda semântica (resultado=verde,
+   cravada=ouro), não só fundo levemente colorido. O anel (box-shadow inset-like)
+   reforça a borda e persiste no hover (apenas eleva). */
+.live-bettor.is-scoring { border-color: var(--success);
+  box-shadow: 0 0 0 1px var(--success); }
+.live-bettor.is-scoring:hover { border-color: var(--success);
+  box-shadow: 0 0 0 1px var(--success), var(--shadow-card); }
+.live-bettor.is-scoring .avatar { box-shadow: 0 0 0 2px var(--success); }
+.live-bettor.is-exact { border-color: var(--gold-border);
+  box-shadow: 0 0 0 1px var(--exact); }
+.live-bettor.is-exact:hover { border-color: var(--gold-border);
+  box-shadow: 0 0 0 1px var(--exact), var(--shadow-card); }
+.live-bettor.is-exact .avatar { box-shadow: 0 0 0 2px var(--exact); }
+.live-bettor.is-exact .live-bettor-pts.scoring { color: var(--exact); }
+
+/* ---- Perfil público (modal) ---- */
+.pubprof-head { display: flex; align-items: center; gap: 14px; }
+.pubprof-name { margin: 0; font-size: var(--fs-lg); }
+.pubprof-bio { color: var(--text-1); }
+.clickable { cursor: pointer; }
+.clickable:hover { background: var(--hover); }
+
+/* ============ Polish / redesign — Rodada 11 (fase G) ============ */
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gold-border); }
+  50% { box-shadow: 0 0 22px 1px var(--gold-border); }
+}
+
+/* Cards interativos: leve elevação no hover (bracket-match: ver seção Mata-mata) */
+.match-card, .live-card {
+  transition: transform .18s var(--ease), box-shadow .18s, border-color .18s;
+}
+.match-card:hover, .live-card:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-1);
+  border-color: var(--border-strong);
+}
+
+/* Filterbar: spec canônica em components.css (seção Filterbar — Agente 5). */
+
+/* ----- Ranking: seção consolidada em css/views-extra.css (Agente 6) ----- */
+
+/* ----- Mata-mata: ver seção "Mata-mata (Agente 5)" abaixo ----- */
+
+/* Botões: micro-interação */
+.btn:active { transform: translateY(0) scale(.98); }

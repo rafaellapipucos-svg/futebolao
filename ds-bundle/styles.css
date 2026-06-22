@@ -1,0 +1,15 @@
+/* ============================================================
+   Tabolão · Copa 2026 — design system styles entry
+   ------------------------------------------------------------
+   This is the look. Rendered designs receive the transitive
+   @import closure below, in the same order as frontend/index.html.
+   No JS components are bundled (the source app is a no-build,
+   imperative-DOM SPA) — style by applying the classes and CSS
+   custom properties these files define. See README.md.
+   ============================================================ */
+@import "./css/tokens.css";       /* design tokens — colors, type, space, radius (light = :root, dark = :root[data-theme="dark"]) */
+@import "./css/base.css";          /* reset, surfaces (.glass), buttons, inputs, chips, toasts, modal, utilities, motion */
+@import "./css/components.css";    /* shell, topbar/tabbar nav, match cards, score, filterbar pills, status bar, countdown */
+@import "./css/views.css";         /* auth, groups/standings, profile, live, public profile */
+@import "./css/views-extra.css";   /* bracket/mata-mata, podium, leaderboard, rules, closed matches */
+@import "./css/match-bets.css";    /* match-bets modal, bet rows */
