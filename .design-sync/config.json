@@ -1,0 +1,7 @@
+{
+  "shape": "styles-only",
+  "readmeHeader": ".design-sync/conventions.md",
+  "localDir": "./ds-bundle",
+  "stylesEntry": "styles.css",
+  "note": "Non-standard styles/tokens-only import. The source app (frontend/) is a no-build, imperative-DOM SPA with NO renderable JS/React components, so the standard component converter does not apply. Only CSS tokens + the class vocabulary are synced (the rendered look + a conventions header). There is no component library / picker cards / _ds_bundle.js. projectId is recorded at project creation."
+}

@@ -1,0 +1,141 @@
+/* ============ DESIGN TOKENS — Tabolão Copa 2026 ============
+   Tema CLARO é o padrão (:root). O modo escuro (a UI original) entra com
+   [data-theme="dark"]. O alternador fica na barra de navegação. */
+:root {
+  /* Tipografia (system stack, sem CDN) */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.84rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.12rem;
+  --fs-xl: 1.45rem;
+  --fs-2xl: 2rem;
+
+  /* Forma */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 999px;
+  --blur: 14px;
+
+  /* Espaços */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
+  /* Layout */
+  --max-w: 1180px;
+  --nav-h: 60px;
+  --tabbar-h: 62px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Glows de marca (decorativos, valem nos dois temas) */
+  --glow-cyan: rgba(37, 194, 255, 0.10);
+  --glow-green: rgba(0, 232, 143, 0.08);
+  --glow-violet: rgba(157, 123, 255, 0.07);
+  --tab-active-glow: rgba(0, 232, 143, 0.6);
+
+  /* Bandeiras Twemoji (Agente 1) — tamanho fixo por contexto, nunca font-size.
+     Iguais nos dois temas (dimensão, não cor). */
+  --flag-sm: 18px;   /* tabelas e listas densas (standings, bracket, bettors) */
+  --flag-md: 24px;   /* padrão: match-card, live-head, mybets */
+  --flag-lg: 32px;   /* destaque */
+
+  /* Semânticos (alias — Agente 2; claro e escuro herdam automaticamente
+     porque referenciam tokens redefinidos por tema) */
+  --success: var(--green);  /* acerto de resultado, confirmações, vaga */
+  --accent: var(--cyan);    /* turquesa: destaque informativo (letra do grupo, links, fase) */
+  --live: var(--red);       /* tudo "ao vivo": dot pulsante, parciais */
+  --exact: var(--gold);     /* cravada/placar exato, 1º lugar, final */
+
+  /* ---------- Paleta CLARA (padrão) ---------- */
+  --bg-0: #e9eef6;
+  --bg-1: #f3f6fb;
+  --bg-2: #ffffff;
+  --surface: rgba(17, 25, 45, 0.035);
+  --surface-2: rgba(17, 25, 45, 0.07);
+  --surface-solid: #ffffff;
+  --border: rgba(17, 25, 45, 0.14);
+  --border-strong: rgba(17, 25, 45, 0.2);
+
+  --green: #00a865;
+  --green-soft: rgba(0, 168, 101, 0.14);
+  --cyan: #0b86c9;
+  --cyan-soft: rgba(11, 134, 201, 0.13);
+  --gold: #c08416;
+  --gold-soft: rgba(192, 132, 22, 0.15);
+  --red: #e02e3d;
+  --red-soft: rgba(224, 46, 61, 0.12);
+  --violet: #6f4fe0;
+
+  --grad-brand: linear-gradient(92deg, #00a865, #0b86c9);
+  --grad-gold: linear-gradient(92deg, #e0a83a, #c08416);
+
+  --text-0: #0e1626;
+  --text-1: #313f56;
+  --text-2: #51607a;
+  --text-on-accent: #ffffff;
+
+  --shadow-1: 0 6px 24px rgba(17, 25, 45, 0.10);
+  --shadow-glow-green: 0 0 20px rgba(0, 168, 101, 0.16);
+  --shadow-glow-gold: 0 0 28px rgba(192, 132, 22, 0.18);
+
+  /* Card sólido (Agente 2) — branco puro sobre o fundo cinza-claro */
+  --card-bg: #ffffff;
+  --shadow-card: 0 1px 3px rgba(17, 25, 45, 0.07), 0 8px 24px rgba(17, 25, 45, 0.08);
+
+  --hover: rgba(17, 25, 45, 0.06);
+  --input-bg: #ffffff;
+  --topbar-bg: rgba(247, 249, 252, 0.85);
+  --tabbar-bg: rgba(255, 255, 255, 0.94);
+  --overlay: rgba(30, 41, 59, 0.40);
+  --red-border: rgba(224, 46, 61, 0.35);
+  --red-faint: rgba(224, 46, 61, 0.07);
+  --gold-border: rgba(192, 132, 22, 0.50);
+}
+
+/* ---------- Paleta ESCURA (UI original) ---------- */
+:root[data-theme="dark"] {
+  --bg-0: #04070f;
+  --bg-1: #070d1d;
+  --bg-2: #0a1428;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --surface-solid: #0d1830;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --green: #00e88f;
+  --green-soft: rgba(0, 232, 143, 0.14);
+  --cyan: #25c2ff;
+  --cyan-soft: rgba(37, 194, 255, 0.13);
+  --gold: #ffc24b;
+  --gold-soft: rgba(255, 194, 75, 0.14);
+  --red: #ff5d6a;
+  --red-soft: rgba(255, 93, 106, 0.13);
+  --violet: #9d7bff;
+
+  --grad-brand: linear-gradient(92deg, #00e88f, #25c2ff);
+  --grad-gold: linear-gradient(92deg, #ffd98a, #ffc24b);
+
+  --text-0: #f2f7ff;
+  --text-1: #b9c6dd;
+  --text-2: #7e8ca6;
+  --text-on-accent: #04240f;
+
+  --shadow-1: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow-green: 0 0 24px rgba(0, 232, 143, 0.18);
+  --shadow-glow-gold: 0 0 32px rgba(255, 194, 75, 0.22);
+
+  /* Card sólido (Agente 2) — superfície sólida escura (= surface-solid) */
+  --card-bg: #0d1830;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+
+  --hover: rgba(255, 255, 255, 0.13);
+  --input-bg: rgba(0, 0, 0, 0.3);
+  --topbar-bg: rgba(5, 10, 22, 0.75);
+  --tabbar-bg: rgba(7, 13, 29, 0.92);
+  --overlay: rgba(2, 5, 12, 0.70);
+  --red-border: rgba(255, 93, 106, 0.30);
+  --red-faint: rgba(255, 93, 106, 0.05);
+  --gold-border: rgba(255, 194, 75, 0.45);
+}

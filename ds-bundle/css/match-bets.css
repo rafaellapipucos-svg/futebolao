@@ -1,0 +1,25 @@
+/* Aba Jogos · modal "Palpites de todos" (clique num jogo encerrado) + cartão
+   clicável. Reusa .hist-item / .hist-list / outcomeClass (hist-gold/green/red)
+   para as cores; aqui só os ajustes do cartão clicável e das linhas de palpite. */
+.clickable-card { cursor: pointer; transition: transform .12s var(--ease); }
+.clickable-card:hover { transform: translateY(-1px); }
+.clickable-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.closed-hint { display: block; text-align: right; margin-top: 6px;
+  color: var(--text-2); font-size: var(--fs-xs); }
+
+.mb-modal { display: grid; gap: var(--sp-3); }
+.mb-head { display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); font-weight: 700; }
+.mb-team { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.mb-team:last-child { justify-content: flex-end; }
+.mb-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-score { flex: none; font-size: var(--fs-lg); font-weight: 800; color: var(--text-0); }
+
+/* Linha de palpite = .hist-item como botão; cor de fundo por acerto (mesma lógica). */
+.betrow { width: 100%; text-align: left; cursor: pointer; font: inherit; }
+.betrow.hist-gold { background: var(--gold-soft); }
+.betrow.hist-green { background: var(--green-soft); }
+.betrow.hist-red { background: var(--red-soft); }
+.betrow-main { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.betrow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.betrow-guess { flex: none; margin-left: auto; color: var(--text-1); font-weight: 700; }
