@@ -80,13 +80,16 @@ def leaderboard(conn: Db, include_live: bool = True) -> List[Dict]:
         }
         for u in users_repo.list_all(conn)
     ]
-    rows.sort(key=lambda r: (-r["total"], -r["exact_hits"], -r["result_hits"],
+    # Desempate (Rodada 18): pontos > RESULTADOS corretos > cravadas > nome.
+    # (Antes era cravadas antes de resultados; o usuário pediu resultados primeiro.
+    #  Cravadas seguem como desempate mais profundo — UI/front inalterados.)
+    rows.sort(key=lambda r: (-r["total"], -r["result_hits"], -r["exact_hits"],
                              r["display_name"].lower()))
     # Posição DENSA (1,1,1,2 — não 1,1,1,4): empates compartilham a posição e a
     # próxima posição avança apenas +1 (Rodada 16, feature F).
     position, last_key = 0, None
     for r in rows:
-        key = (r["total"], r["exact_hits"], r["result_hits"])
+        key = (r["total"], r["result_hits"], r["exact_hits"])
         if key != last_key:
             position += 1
             last_key = key

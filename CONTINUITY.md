@@ -74,7 +74,37 @@
 - Dockerfile, docker-compose.yml, fly.toml, scripts/verify.sh, README.md
 - Docs: ARCHITECTURE.md, AGENTS.md, TESTPLAN.md, GOALS.md, REVIEW.md
 
+## Rodada 18 — fix do ✓ em grupo encerrado + setinhas no placar (2026-06-26)
+- [USER] Pergunta: Canadá (2º no Grupo B) sem ✓ mesmo com grupo encerrado.
+- [CODE] Causa: o ✓ (clinchMark em dashboard.js) lê só clinched_first/top2 do
+  clinch.py, que é conservador (SÓ pontos). Canadá empatado em pontos com a
+  Bósnia (4) ⇒ clinch enxerga 2 times "alcançando" ⇒ top2=False. O 2º lugar é
+  decidido por saldo, que mora em standings.py, não em clinch.py.
+- D013 ACTIVE: para grupo ENCERRADO, standings_svc deriva clinched_first/top2/
+  eliminated_top2 da POSIÇÃO final (com desempates), não só dos pontos. Grupo em
+  andamento mantém clinch conservador. (clinch.py já recomendava isso no docstring.)
+- D014 ACTIVE: desempate do RANKING = pontos > resultados corretos > cravadas >
+  nome (antes: cravadas antes de resultados). [USER 2026-06-26] Só lógica do
+  backend (leaderboard.py); UI/front inalterados. result_hits = acerto de
+  resultado NÃO-exato (cravadas contam em exact_hits, desempate mais profundo).
+- [USER] Pedido: restaurar setinhas − / + nos campos de gol da aba de apostas
+  (some no celular sem precisar de teclado; haviam sido removidas no rework e0c3790).
+- [CODE] betbox.js: goalField → goalStepper (input + botões − / +, mesmo
+  saneamento 0–20, drafts, aria-labels). CSS .goal-stepper/.step-btn (tokens) +
+  shrink ≤360px. Reaproveita intenção do stepper original de f2ee419.
+  NOTA: .bet-stepper/.bet-value em components.css ficaram como CSS morto (rework
+  passou a usar .bet-input); novas classes são .goal-stepper/.step-btn.
+
 ## Receipts (ultimos)
+- 2026-06-26 [CODE] backend core 218 OK (pytest) + frontend 68 OK (node --test)
+  + render-test stub: setinhas inc/dec, clamp 0–20, 2 steppers independentes OK
+- 2026-06-26 [CODE] backend core 219 OK (+1: test_desempate_resultados_antes_de_
+  cravadas prova resultados > cravadas em empate de pontos). leaderboard.py via py.
+- 2026-06-26 [TOOL] I001 RECORREU no Edit tool: truncou standings_svc.py,
+  betbox.js, components.css, views-extra.css e o próprio CONTINUITY.md.
+  Mitigação: reescrita via heredoc/python a partir do git HEAD + sweep
+  (py_compile/node --check/brace-balance). I002 EPERM no rm exigiu
+  allow_cowork_file_delete p/ limpar temp.
 - 2026-06-10 [TOOL] fixturedownload.com -> 104 jogos oficiais OK
 - 2026-06-10 [TOOL] Wikipedia knockout stage -> bracket refs + Annex C 495 OK
 - 2026-06-10 [TOOL] pip/npm 403 (proxy) -> estrategia nucleo-testavel adotada

@@ -46,15 +46,21 @@ def standings(conn: Db, include_live: bool = True) -> List[Dict]:
         payload_rows = []
         for r in rows:
             o = outlook[r.team_id]
+            # Grupo encerrado: posição final (com desempates de saldo/GP/H2H) já é
+            # definitiva. O clinch é conservador (só pontos) e não enxerga isso, então
+            # a classificação garantida passa a vir da posição. Ver clinch.py docstring.
+            clinched_first = o.clinched_first or (finished and r.position == 1)
+            clinched_top2 = o.clinched_top2 or (finished and r.position <= 2)
+            eliminated_top2 = o.eliminated_top2 or (finished and r.position > 2)
             row = {
                 "team": _team_payload(teams[r.team_id]),
                 "position": r.position,
                 "played": r.played, "won": r.won, "drawn": r.drawn, "lost": r.lost,
                 "gf": r.gf, "ga": r.ga, "gd": r.gd, "points": r.points,
                 "live": r.live, "tie_unresolved": r.tie_unresolved,
-                "clinched_first": o.clinched_first,
-                "clinched_top2": o.clinched_top2,
-                "eliminated_top2": o.eliminated_top2,
+                "clinched_first": clinched_first,
+                "clinched_top2": clinched_top2,
+                "eliminated_top2": eliminated_top2,
             }
             if r.position == 3:  # 3º colocado: marca se passaria entre os 8 melhores
                 row["third_qualifying"] = g in qualifying

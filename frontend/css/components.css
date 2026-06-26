@@ -261,9 +261,24 @@ textarea.input { min-height: 74px; resize: vertical; line-height: 1.45;
   text-transform: uppercase; letter-spacing: 0.04em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* --- Campos de gol: 2 inputs limpos lado a lado + "×" central (sem setas) --- */
+/* --- Campos de gol: input central com setinhas - / + de cada lado + "×" no
+   meio. As setinhas deixam ajustar o placar sem abrir o teclado no celular; o
+   input continua editável p/ quem prefere digitar. --- */
 .bet-inputs { display: flex; align-items: center; justify-content: center;
-  gap: var(--sp-3); }
+  gap: var(--sp-2); }
+.goal-stepper { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.step-btn { width: 42px; height: 52px; flex: none;
+  display: grid; place-items: center; cursor: pointer;
+  font-size: 1.5rem; font-weight: 800; line-height: 1;
+  color: var(--text-0); background: var(--surface-2);
+  border: 1px solid var(--border-strong); border-radius: var(--r-md);
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background .15s, border-color .15s, transform .08s; }
+.step-btn:hover { background: var(--hover); }
+.step-btn:active { transform: scale(0.92); }
+.step-btn:focus-visible { outline: none; border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft); }
 .bet-input { width: 60px; height: 52px; text-align: center;
   font-family: var(--mono); font-size: var(--fs-xl); font-weight: 800;
   color: var(--text-0); background: var(--input-bg);

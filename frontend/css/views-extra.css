@@ -236,6 +236,12 @@
 @media (max-width: 360px) {
   .status-lbl { letter-spacing: 0; }
   .status-item { gap: 7px; padding: var(--sp-2) 4px; }
+  /* 2 steppers (botão+input+botão) + "×" apertam em ~360px: encolhe sem perder
+     o alvo de toque (botões >=36px continuam confortáveis). */
+  .bet-inputs { gap: 4px; }
+  .goal-stepper { gap: 4px; }
+  .step-btn { width: 36px; height: 48px; font-size: 1.3rem; }
+  .bet-input { width: 46px; height: 48px; }
 }
 
 /* ===================== Rodada 16 ===================== */

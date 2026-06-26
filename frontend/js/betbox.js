@@ -28,24 +28,42 @@ export function kickoffProgress(kickoffIso, nowMs = Date.now(), windowMs = URGEN
   return 1 - diff / windowMs;
 }
 
-// Um campo de gol: input numérico limpo (sem setas), acessível via aria-label.
-// Atualiza o rascunho e reescreve o valor saneado ao sair do campo (blur).
-function goalField(value, ariaLabel, onChange) {
+// Um campo de gol com setinhas − / +: dá pra ajustar o placar sem abrir o teclado
+// no celular, mas o input segue editável (digitar também funciona). O valor é
+// saneado (inteiro 0–20) em todas as vias — digitação, blur e botões — e o
+// rascunho é atualizado via onChange. Acessível via aria-label.
+function goalStepper(value, ariaLabel, onChange) {
   const input = h('input', {
     class: 'bet-input tnum', type: 'text', inputmode: 'numeric',
     pattern: '[0-9]*', maxlength: '2', autocomplete: 'off',
     'aria-label': ariaLabel, value: String(value),
   });
+  // Reescreve o input com o valor saneado e propaga (usado por blur e botões).
+  const commit = (raw) => {
+    const n = clampScore(raw);
+    input.value = String(n);
+    onChange(n);
+  };
   input.addEventListener('input', () => {
     input.value = input.value.replace(/[^0-9]/g, '').slice(0, 2);
     onChange(clampScore(input.value));
   });
-  input.addEventListener('blur', () => {
-    const n = clampScore(input.value);
-    input.value = String(n);
-    onChange(n);
-  });
-  return input;
+  input.addEventListener('blur', () => commit(input.value));
+
+  // tabindex=-1: os botões ficam fora da navegação por Tab (o input já está lá);
+  // type=button evita submit; aria-label descreve a ação por extenso.
+  const dec = h('button', {
+    class: 'step-btn', type: 'button', tabindex: '-1',
+    'aria-label': `Menos um gol — ${ariaLabel}`,
+  }, '−');
+  const inc = h('button', {
+    class: 'step-btn', type: 'button', tabindex: '-1',
+    'aria-label': `Mais um gol — ${ariaLabel}`,
+  }, '+');
+  dec.addEventListener('click', () => commit(clampScore(input.value) - 1));
+  inc.addEventListener('click', () => commit(clampScore(input.value) + 1));
+
+  return h('div', { class: 'goal-stepper' }, dec, input, inc);
 }
 
 function openEditor(store, match) {
@@ -99,9 +117,9 @@ function openEditor(store, match) {
 
   return h('div', { class: 'bet-area' },
     h('div', { class: 'bet-inputs' },
-      goalField(existing.h, `Gols do ${homeName}`, (n) => { drafts.get(match.id).h = n; }),
+      goalStepper(existing.h, `Gols do ${homeName}`, (n) => { drafts.get(match.id).h = n; }),
       h('span', { class: 'bet-x', 'aria-hidden': 'true' }, '×'),
-      goalField(existing.a, `Gols do ${awayName}`, (n) => { drafts.get(match.id).a = n; }),
+      goalStepper(existing.a, `Gols do ${awayName}`, (n) => { drafts.get(match.id).a = n; }),
     ),
     saveBtn,
     countdownEl,

@@ -142,6 +142,32 @@ class TestLeaderboard(unittest.TestCase):
         row = next(r for r in leaderboard(self.conn) if r["display_name"] == "Ze")
         self.assertEqual(row["total"], 3)
 
+    def test_desempate_resultados_antes_de_cravadas(self):
+        # Rodada 18: empate em PONTOS deve ser desfeito por RESULTADOS corretos
+        # ANTES de cravadas. Alice = 1 cravada (3 pts); Bob = 3 resultados (3 pts).
+        # Mesmo total, mas Bob tem mais resultados ⇒ Bob na frente.
+        from app.db.schema import bump_data_version
+        # Bob (setUp já apostou 3x1 no jogo 1 = resultado) ganha +2 resultados:
+        place_bet(self.conn, self.bob, 2, 2, 0, now=BEFORE)  # aposta vitória mandante
+        place_bet(self.conn, self.bob, 3, 2, 0, now=BEFORE)
+        matches_repo.set_score(self.conn, 1, 2, 1, "finished")  # Alice crava; Bob resultado
+        matches_repo.set_score(self.conn, 2, 1, 0, "finished")  # Bob resultado (não exato)
+        matches_repo.set_score(self.conn, 3, 1, 0, "finished")  # Bob resultado (não exato)
+        bump_data_version(self.conn)
+        rows = leaderboard(self.conn)
+        by_name = {r["display_name"]: r for r in rows}
+        # Empate em pontos com composição diferente:
+        self.assertEqual(by_name["Alice"]["total"], 3)
+        self.assertEqual(by_name["Alice"]["exact_hits"], 1)
+        self.assertEqual(by_name["Alice"]["result_hits"], 0)
+        self.assertEqual(by_name["Bob"]["total"], 3)
+        self.assertEqual(by_name["Bob"]["exact_hits"], 0)
+        self.assertEqual(by_name["Bob"]["result_hits"], 3)
+        # Novo desempate: Bob (mais resultados) ANTES de Alice (mais cravadas).
+        self.assertEqual(by_name["Bob"]["position"], 1)
+        self.assertEqual(by_name["Alice"]["position"], 2)
+        self.assertTrue(rows.index(by_name["Bob"]) < rows.index(by_name["Alice"]))
+
 
 if __name__ == "__main__":
     unittest.main()
